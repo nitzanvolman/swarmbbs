@@ -1,13 +1,13 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version Change: 1.0.0 → 1.1.0
-Rationale: Added new principle VI (Fail-Fast Error Handling) - MINOR version bump
+Version Change: 1.1.0 → 1.2.0
+Rationale: Added new principle VII (Autonomous Task Completion) - MINOR version bump
 
 Modified Principles: None
 Added Sections:
-  - Principle VI: Fail-Fast Error Handling
-  - Updated Quality Standards to reference error handling requirements
+  - Principle VII: Autonomous Task Completion
+  - Updated Development Workflow to reflect autonomous execution
 
 Removed Sections: None
 
@@ -134,6 +134,56 @@ if (!config.apiKey) {
 const apiKey = config.apiKey || "default-key"; // Hides configuration problem
 ```
 
+### VII. Autonomous Task Completion (NON-NEGOTIABLE)
+
+When given a task, agents MUST carry on autonomously until the task is complete. Agents MUST NOT stop to request human instructions unless it is absolutely necessary and continuation is impossible without human input. When decisions are required, agents MUST use their best judgment, document their reasoning, and continue execution.
+
+**Rationale**: Autonomous execution maximizes productivity and reduces human interruption overhead. Agents have sufficient context and capability to make informed decisions. Pausing for trivial confirmations wastes time and breaks flow. Human review of logged reasoning is more efficient than real-time approval gates.
+
+**Implementation Requirements**:
+- Complete assigned tasks without human intervention unless truly blocked
+- Make informed decisions using available context and best practices
+- Document all significant decisions with clear reasoning
+- Log decision rationale for human review after task completion
+- Only request human input when:
+  - Critical business decisions with significant financial/legal implications
+  - Ambiguous requirements with multiple valid interpretations that fundamentally change scope
+  - Destructive operations without clear rollback paths
+  - Security/privacy decisions requiring policy choices
+- Prefer sensible defaults and industry best practices over human confirmation
+- Continue execution after making decisions rather than waiting for approval
+
+**Decision Documentation Pattern**:
+```markdown
+## Autonomous Decisions Log
+
+### Decision 1: [Brief Title]
+**Context**: [What situation required a decision]
+**Options Considered**:
+  - Option A: [Description] - Rejected because [reason]
+  - Option B: [Description] - **SELECTED** because [reason]
+**Rationale**: [Detailed explanation of why this choice best serves the task]
+**Impact**: [What this decision affects]
+**Reversibility**: [How easily this can be changed if needed]
+
+### Decision 2: ...
+```
+
+**When Human Input IS Required** (rare cases):
+- Choosing between fundamentally different architectural approaches with long-term implications
+- Deciding on data retention policies or user privacy handling
+- Approving destructive operations (delete production data, drop databases)
+- Resolving true requirement ambiguities that change feature scope significantly
+
+**When Human Input is NOT Required** (proceed autonomously):
+- Choosing between similar technical implementations (library A vs library B)
+- Selecting code organization patterns within established conventions
+- Making performance optimization trade-offs within documented constraints
+- Handling edge cases with reasonable default behaviors
+- Refactoring code structure for maintainability
+- Writing documentation and examples
+- Choosing test strategies and coverage approaches
+
 ## Development Workflow
 
 ### Planning Phase
@@ -167,11 +217,14 @@ const apiKey = config.apiKey || "default-key"; // Hides configuration problem
    - Use parallel Task tool invocations for independent modules
    - Follow file organization rules
    - Respect 500-line limit
+   - **Execute autonomously**: Make necessary technical decisions without human approval (see Principle VII)
+   - Document significant decisions in decisions log for later review
 
 4. **Refactor Phase**: Improve code quality without changing behavior
    - Extract common patterns
    - Improve naming and structure
    - Verify tests still pass
+   - **Continue autonomously**: Refactor without seeking approval unless changing public APIs
 
 ### Review Phase
 
@@ -179,6 +232,7 @@ const apiKey = config.apiKey || "default-key"; // Hides configuration problem
 2. **Test Coverage**: Confirm all requirements tested
 3. **Code Quality**: Check modularity and file sizes
 4. **Documentation**: Ensure specs and plans are current
+5. **Decision Review**: Review autonomous decisions log if present
 
 ## Quality Standards
 
@@ -253,4 +307,4 @@ Violations of constitutional principles require explicit justification:
 
 ### Version Control
 
-**Version**: 1.1.0 | **Ratified**: 2025-11-12 | **Last Amended**: 2025-11-12
+**Version**: 1.2.0 | **Ratified**: 2025-11-12 | **Last Amended**: 2025-11-12
