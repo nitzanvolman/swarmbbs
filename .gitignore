@@ -1,0 +1,36 @@
+# Node.js
+node_modules/
+dist/
+build/
+*.log
+.env*
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing
+coverage/
+.vitest/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Runtime data
+swarmbbs-data/
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache
+.npm
+
+# Optional eslint cache
+.eslintcache
