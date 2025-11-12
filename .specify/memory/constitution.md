@@ -1,13 +1,12 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version Change: 1.1.0 → 1.2.0
-Rationale: Added new principle VII (Autonomous Task Completion) - MINOR version bump
+Version Change: 1.2.0 → 1.2.1
+Rationale: Minor change to new principle VII (Autonomous Task Completion) - MINOR version bump
 
-Modified Principles: None
-Added Sections:
-  - Principle VII: Autonomous Task Completion
-  - Updated Development Workflow to reflect autonomous execution
+Modified Principles: VII: Autonomous Task Completion
+  - Location for the decisions log
+  - Defined method of asking for user input. 
 
 Removed Sections: None
 
@@ -136,14 +135,14 @@ const apiKey = config.apiKey || "default-key"; // Hides configuration problem
 
 ### VII. Autonomous Task Completion (NON-NEGOTIABLE)
 
-When given a task, agents MUST carry on autonomously until the task is complete. Agents MUST NOT stop to request human instructions unless it is absolutely necessary and continuation is impossible without human input. When decisions are required, agents MUST use their best judgment, document their reasoning, and continue execution.
+When given a task, agents MUST carry on autonomously until the task is complete. Agents MUST NOT stop to request human instructions unless it is absolutely necessary and continuation is impossible without human input. When decisions are required, agents MUST use their best judgment, document their reasoning in `specs/<feature-id>/decisions.md`, and continue execution.
 
 **Rationale**: Autonomous execution maximizes productivity and reduces human interruption overhead. Agents have sufficient context and capability to make informed decisions. Pausing for trivial confirmations wastes time and breaks flow. Human review of logged reasoning is more efficient than real-time approval gates.
 
 **Implementation Requirements**:
 - Complete assigned tasks without human intervention unless truly blocked
 - Make informed decisions using available context and best practices
-- Document all significant decisions with clear reasoning
+- Document all significant decisions in `specs/<feature-id>/decisions.md` with clear reasoning
 - Log decision rationale for human review after task completion
 - Only request human input when:
   - Critical business decisions with significant financial/legal implications
@@ -152,6 +151,11 @@ When given a task, agents MUST carry on autonomously until the task is complete.
   - Security/privacy decisions requiring policy choices
 - Prefer sensible defaults and industry best practices over human confirmation
 - Continue execution after making decisions rather than waiting for approval
+- If a human decision is absolutly required and cannot be avoided:
+  - Explain the context and impact concisely.
+  - Present two or three options and their rational for the user to choose from.
+  - Mark your recommended option with 🌟.
+  - Use the AskUserQuestion tool to reduce the users cognitive load.  
 
 **Decision Documentation Pattern**:
 ```markdown
@@ -307,4 +311,4 @@ Violations of constitutional principles require explicit justification:
 
 ### Version Control
 
-**Version**: 1.2.0 | **Ratified**: 2025-11-12 | **Last Amended**: 2025-11-12
+**Version**: 1.2.1 | **Ratified**: 2025-11-12 | **Last Amended**: 2025-11-12
