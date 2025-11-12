@@ -66,20 +66,20 @@ Parent Coordinator
 
 ### Tasks
 
-- [ ] T001 Initialize npm project with Node.js 22.x configuration in package.json
-- [ ] T002 Install production dependencies (@modelcontextprotocol/sdk@1.21.1, async-mutex@0.5.0, ajv@8.17.1)
-- [ ] T003 [P] Install development dependencies (vitest@2.1.5, typescript@5.7.2, tsx@4.19.0, @types/node@22.0.0)
-- [ ] T004 [P] Create TypeScript configuration in tsconfig.json with Node16 module resolution
-- [ ] T005 [P] Create Vitest configuration in vitest.config.ts
-- [ ] T006 [P] Create project directory structure (src/, tests/contract/, tests/integration/, tests/unit/)
-- [ ] T007 [P] Define event types in src/types/events.ts (MessageEvent, ReadReceiptEvent, SnapshotEvent, SystemNoteEvent)
-- [ ] T008 [P] Define state types in src/types/state.ts (Cursor, PresenceRecord, Profile, Announcement, CompactionSession)
-- [ ] T009 [P] Create JSON schemas for validation in src/types/schemas.ts using Ajv
-- [ ] T010 [P] Implement name validation utilities in src/utils/validation.ts (space/thread name pattern matching)
-- [ ] T011 [P] Implement text sanitization for JSONL integrity in src/utils/validation.ts
-- [ ] T012 [P] Implement error handling framework in src/utils/errors.ts (SwarmBBSError class with code, context, nextSteps)
-- [ ] T013 [P] Implement mutex map management in src/utils/locking.ts (per-thread mutex with lazy creation)
-- [ ] T014 Verify project builds successfully with `npm run build`
+- [X] T001 Initialize npm project with Node.js 22.x configuration in package.json
+- [X] T002 Install production dependencies (@modelcontextprotocol/sdk@1.21.1, async-mutex@0.5.0, ajv@8.17.1)
+- [X] T003 [P] Install development dependencies (vitest@2.1.5, typescript@5.7.2, tsx@4.19.0, @types/node@22.0.0)
+- [X] T004 [P] Create TypeScript configuration in tsconfig.json with Node16 module resolution
+- [X] T005 [P] Create Vitest configuration in vitest.config.ts
+- [X] T006 [P] Create project directory structure (src/, tests/contract/, tests/integration/, tests/unit/)
+- [X] T007 [P] Define event types in src/types/events.ts (MessageEvent, ReadReceiptEvent, SnapshotEvent, SystemNoteEvent)
+- [X] T008 [P] Define state types in src/types/state.ts (Cursor, PresenceRecord, Profile, Announcement, CompactionSession)
+- [X] T009 [P] Create JSON schemas for validation in src/types/schemas.ts using Ajv
+- [X] T010 [P] Implement name validation utilities in src/utils/validation.ts (space/thread name pattern matching)
+- [X] T011 [P] Implement text sanitization for JSONL integrity in src/utils/validation.ts
+- [X] T012 [P] Implement error handling framework in src/utils/errors.ts (SwarmBBSError class with code, context, nextSteps)
+- [X] T013 [P] Implement mutex map management in src/utils/locking.ts (per-thread mutex with lazy creation)
+- [X] T014 Verify project builds successfully with `npm run build`
 
 **Phase 1 Complete** → Parent commits setup and foundation
 
@@ -101,21 +101,21 @@ Parent Coordinator
 
 ### Tasks
 
-- [ ] T015 [P] Implement tail reading optimization in src/storage/tail-reader.ts (read last N lines without loading full file)
-- [ ] T016 [P] Implement atomic JSONL append in src/storage/thread-ops.ts (thread creation, message append with mutex)
-- [ ] T017 [P] Implement thread reading operations in src/storage/thread-ops.ts (read tail, get current seq, get epoch)
-- [ ] T018 [P] Implement cursor read/write operations in src/storage/cursor-ops.ts (get cursor, update cursor, persist to file)
-- [ ] T019 [P] Implement cursor advancement logic in src/storage/cursor-ops.ts (advance after delivery, epoch clamping)
-- [ ] T020 [P] Implement read receipt appending in src/storage/cursor-ops.ts (append read event to thread after cursor update)
-- [ ] T021 [P] Implement presence tracking in src/storage/state-ops.ts (read/write presence records, check TTL)
-- [ ] T022 [P] Implement profile management in src/storage/state-ops.ts (read/write agent profiles)
-- [ ] T023 [P] Implement announcement storage in src/storage/state-ops.ts (read/write/update announcements with version tracking)
-- [ ] T024 [P] Implement "Who's online" query in src/storage/state-ops.ts (filter by presence TTL, include profiles)
-- [ ] T025 [P] Unit test tail reader with large files in tests/unit/tail-reader.test.ts
-- [ ] T026 [P] Unit test cursor advancement and clamping in tests/unit/cursor-logic.test.ts
-- [ ] T027 [P] Unit test text sanitization (newlines, special characters) in tests/unit/validation.test.ts
-- [ ] T028 [P] Unit test epoch tracking across compactions in tests/unit/cursor-logic.test.ts
-- [ ] T029 Run unit tests and verify all pass
+- [X] T015 [P] Implement tail reading optimization in src/storage/tail-reader.ts (read last N lines without loading full file)
+- [X] T016 [P] Implement atomic JSONL append in src/storage/thread-ops.ts (thread creation, message append with mutex)
+- [X] T017 [P] Implement thread reading operations in src/storage/thread-ops.ts (read tail, get current seq, get epoch)
+- [X] T018 [P] Implement cursor read/write operations in src/storage/cursor-ops.ts (get cursor, update cursor, persist to file)
+- [X] T019 [P] Implement cursor advancement logic in src/storage/cursor-ops.ts (advance after delivery, epoch clamping)
+- [X] T020 [P] Implement read receipt appending in src/storage/cursor-ops.ts (append read event to thread after cursor update)
+- [X] T021 [P] Implement presence tracking in src/storage/state-ops.ts (read/write presence records, check TTL)
+- [X] T022 [P] Implement profile management in src/storage/state-ops.ts (read/write agent profiles)
+- [X] T023 [P] Implement announcement storage in src/storage/state-ops.ts (read/write/update announcements with version tracking)
+- [X] T024 [P] Implement "Who's online" query in src/storage/state-ops.ts (filter by presence TTL, include profiles)
+- [X] T025 [P] Unit test tail reader with large files in tests/unit/tail-reader.test.ts
+- [X] T026 [P] Unit test cursor advancement and clamping in tests/unit/cursor-logic.test.ts
+- [X] T027 [P] Unit test text sanitization (newlines, special characters) in tests/unit/validation.test.ts
+- [X] T028 [P] Unit test epoch tracking across compactions in tests/unit/cursor-logic.test.ts
+- [X] T029 Run unit tests and verify all pass
 
 **Phase 2 Complete** → Parent commits storage layer
 
@@ -168,20 +168,20 @@ git commit -m "feat: Phase 6 - User Story 4 (Presence & Discovery)"
 
 ### Implementation for User Story 1
 
-- [ ] T030 [P] [US1] Initialize MCP server with stdio transport in src/server/mcp-server.ts
-- [ ] T031 [P] [US1] Implement handle inference from environment in src/server/mcp-server.ts
-- [ ] T032 [P] [US1] Create tool registry structure in src/server/tool-registry.ts
-- [ ] T033 [US1] Implement send_message tool in src/tools/messaging.ts (validate input, append to thread, return confirmation)
-- [ ] T034 [US1] Implement poll_messages tool in src/tools/messaging.ts (multi-thread polling, cursor-based delivery, timeout support)
-- [ ] T034a [US1] Implement automatic presence update middleware in src/server/mcp-server.ts  (update last_request_ts on every tool invocation)
-- [ ] T035 [US1] Implement reset_cursor tool in src/tools/messaging.ts (reset read position, handle clamping)
-- [ ] T036 [P] [US1] Contract test for send_message in tests/contract/messaging.test.ts (valid input, size limits, sanitization)
-- [ ] T037 [P] [US1] Contract test for poll_messages in tests/contract/messaging.test.ts (multi-thread, timeout, cursor advancement)
-- [ ] T038 [P] [US1] Contract test for reset_cursor in tests/contract/messaging.test.ts
-- [ ] T039 [US1] Integration test for User Story 1 in tests/integration/user-story-1.test.ts (agent-a sends, agent-b receives)
-- [ ] T040 [US1] Integration test for concurrent writes in tests/integration/user-story-1.test.ts (unique seq numbers under load)
-- [ ] T041 [US1] Create CLI entry point in src/index.ts (parse arguments, start server)
-- [ ] T042 [US1] Run contract and integration tests for US1, verify all pass
+- [X] T030 [P] [US1] Initialize MCP server with stdio transport in src/server/mcp-server.ts
+- [X] T031 [P] [US1] Implement handle inference from environment in src/server/mcp-server.ts
+- [X] T032 [P] [US1] Create tool registry structure in src/server/tool-registry.ts
+- [X] T033 [US1] Implement send_message tool in src/tools/messaging.ts (validate input, append to thread, return confirmation)
+- [X] T034 [US1] Implement poll_messages tool in src/tools/messaging.ts (multi-thread polling, cursor-based delivery, timeout support)
+- [X] T034a [US1] Implement automatic presence update middleware in src/server/mcp-server.ts  (update last_request_ts on every tool invocation)
+- [X] T035 [US1] Implement reset_cursor tool in src/tools/messaging.ts (reset read position, handle clamping)
+- [X] T036 [P] [US1] Contract test for send_message in tests/contract/messaging.test.ts (valid input, size limits, sanitization)
+- [X] T037 [P] [US1] Contract test for poll_messages in tests/contract/messaging.test.ts (multi-thread, timeout, cursor advancement)
+- [X] T038 [P] [US1] Contract test for reset_cursor in tests/contract/messaging.test.ts
+- [X] T039 [US1] Integration test for User Story 1 in tests/integration/user-story-1.test.ts (agent-a sends, agent-b receives)
+- [X] T040 [US1] Integration test for concurrent writes in tests/integration/user-story-1.test.ts (unique seq numbers under load)
+- [X] T041 [US1] Create CLI entry point in src/index.ts (parse arguments, start server)
+- [X] T042 [US1] Run contract and integration tests for US1, verify all pass
 
 **Dev-A Complete** → Return to parent (no commit)
 
@@ -207,13 +207,13 @@ git commit -m "feat: Phase 6 - User Story 4 (Presence & Discovery)"
 
 ### Implementation for User Story 2
 
-- [ ] T043 [P] [US2] Implement canonical P2P naming algorithm in src/tools/p2p.ts (lowercase, alphabetically sorted)
-- [ ] T044 [US2] Implement open_p2p tool in src/tools/p2p.ts (resolve canonical thread name, create if needed)
-- [ ] T045 [US2] Implement send_p2p tool in src/tools/p2p.ts (convenience: open + send)
-- [ ] T046 [P] [US2] Contract test for open_p2p in tests/contract/p2p.test.ts (canonical naming both directions)
-- [ ] T047 [P] [US2] Contract test for send_p2p in tests/contract/p2p.test.ts
-- [ ] T048 [US2] Integration test for User Story 2 in tests/integration/user-story-2.test.ts (private messaging, third party cannot access)
-- [ ] T049 [US2] Run contract and integration tests for US2, verify all pass
+- [X] T043 [P] [US2] Implement canonical P2P naming algorithm in src/tools/p2p.ts (lowercase, alphabetically sorted)
+- [X] T044 [US2] Implement open_p2p tool in src/tools/p2p.ts (resolve canonical thread name, create if needed)
+- [X] T045 [US2] Implement send_p2p tool in src/tools/p2p.ts (convenience: open + send)
+- [X] T046 [P] [US2] Contract test for open_p2p in tests/contract/p2p.test.ts (canonical naming both directions)
+- [X] T047 [P] [US2] Contract test for send_p2p in tests/contract/p2p.test.ts
+- [X] T048 [US2] Integration test for User Story 2 in tests/integration/user-story-2.test.ts (private messaging, third party cannot access)
+- [X] T049 [US2] Run contract and integration tests for US2, verify all pass
 
 **Dev-B Complete** → Return to parent (no commit)
 
@@ -239,14 +239,14 @@ git commit -m "feat: Phase 6 - User Story 4 (Presence & Discovery)"
 
 ### Implementation for User Story 4
 
-- [ ] T050 [P] [US4] Implement introduce tool in src/tools/presence.ts (create/update profile with role and expertise)
-- [ ] T051 [P] [US4] Implement send_heartbeat tool in src/tools/presence.ts (update presence with status and timestamp)
-- [ ] T052 [P] [US4] Implement who_online tool in src/tools/presence.ts (query active agents, include profiles)
-- [ ] T053 [P] [US4] Contract test for introduce in tests/contract/presence.test.ts
-- [ ] T054 [P] [US4] Contract test for send_heartbeat in tests/contract/presence.test.ts
-- [ ] T055 [P] [US4] Contract test for who_online in tests/contract/presence.test.ts (TTL filtering)
-- [ ] T056 [US4] Integration test for User Story 4 in tests/integration/user-story-4.test.ts (presence lifecycle, TTL expiration)
-- [ ] T057 [US4] Run contract and integration tests for US4, verify all pass
+- [X] T050 [P] [US4] Implement introduce tool in src/tools/presence.ts (create/update profile with role and expertise)
+- [X] T051 [P] [US4] Implement send_heartbeat tool in src/tools/presence.ts (update presence with status and timestamp)
+- [X] T052 [P] [US4] Implement who_online tool in src/tools/presence.ts (query active agents, include profiles)
+- [X] T053 [P] [US4] Contract test for introduce in tests/contract/presence.test.ts
+- [X] T054 [P] [US4] Contract test for send_heartbeat in tests/contract/presence.test.ts
+- [X] T055 [P] [US4] Contract test for who_online in tests/contract/presence.test.ts (TTL filtering)
+- [X] T056 [US4] Integration test for User Story 4 in tests/integration/user-story-4.test.ts (presence lifecycle, TTL expiration)
+- [X] T057 [US4] Run contract and integration tests for US4, verify all pass
 
 **Dev-C Complete** → Return to parent (no commit)
 
@@ -310,12 +310,12 @@ git commit -m "feat: Phase 10 - CLI & Documentation"
 
 ### Implementation for User Story 3
 
-- [ ] T058 [US3] Implement blocking poll mechanism in src/tools/messaging.ts (EventEmitter-based notification)
-- [ ] T059 [US3] Implement early return on message arrival in src/tools/messaging.ts (detect new messages, cancel timeout)
-- [ ] T060 [US3] Implement parallel thread reads in src/tools/messaging.ts (read multiple threads concurrently)
-- [ ] T061 [P] [US3] Contract test for blocking poll behavior in tests/contract/messaging.test.ts (timeout vs early return)
-- [ ] T062 [US3] Integration test for User Story 3 in tests/integration/user-story-3.test.ts (multi-thread poll with timeout)
-- [ ] T063 [US3] Run contract and integration tests for US3, verify all pass
+- [X] T058 [US3] Implement blocking poll mechanism in src/tools/messaging.ts (EventEmitter-based notification)
+- [X] T059 [US3] Implement early return on message arrival in src/tools/messaging.ts (detect new messages, cancel timeout)
+- [X] T060 [US3] Implement parallel thread reads in src/tools/messaging.ts (read multiple threads concurrently)
+- [X] T061 [P] [US3] Contract test for blocking poll behavior in tests/contract/messaging.test.ts (timeout vs early return)
+- [X] T062 [US3] Integration test for User Story 3 in tests/integration/user-story-3.test.ts (multi-thread poll with timeout)
+- [X] T063 [US3] Run contract and integration tests for US3, verify all pass
 
 **Dev-A Complete** → Return to parent (no commit)
 
@@ -342,15 +342,15 @@ git commit -m "feat: Phase 10 - CLI & Documentation"
 
 ### Implementation for User Story 5
 
-- [ ] T064 [P] [US5] Implement announcement_set tool in src/tools/announcements.ts (replace content, bump version)
-- [ ] T065 [P] [US5] Implement announcement_append tool in src/tools/announcements.ts (append to content, bump version)
-- [ ] T066 [P] [US5] Implement announcement_get tool in src/tools/announcements.ts (retrieve current announcement)
-- [ ] T067 [US5] Implement announcement seen tracking in src/storage/state-ops.ts (per-handle version tracking)
-- [ ] T068 [P] [US5] Contract test for announcement_set in tests/contract/announcements.test.ts
-- [ ] T069 [P] [US5] Contract test for announcement_append in tests/contract/announcements.test.ts (version increment, size limits)
-- [ ] T070 [P] [US5] Contract test for announcement_get in tests/contract/announcements.test.ts
-- [ ] T071 [US5] Integration test for User Story 5 in tests/integration/user-story-5.test.ts (exactly-once delivery per version)
-- [ ] T072 [US5] Run contract and integration tests for US5, verify all pass
+- [X] T064 [P] [US5] Implement announcement_set tool in src/tools/announcements.ts (replace content, bump version)
+- [X] T065 [P] [US5] Implement announcement_append tool in src/tools/announcements.ts (append to content, bump version)
+- [X] T066 [P] [US5] Implement announcement_get tool in src/tools/announcements.ts (retrieve current announcement)
+- [X] T067 [US5] Implement announcement seen tracking in src/storage/state-ops.ts (per-handle version tracking)
+- [X] T068 [P] [US5] Contract test for announcement_set in tests/contract/announcements.test.ts
+- [X] T069 [P] [US5] Contract test for announcement_append in tests/contract/announcements.test.ts (version increment, size limits)
+- [X] T070 [P] [US5] Contract test for announcement_get in tests/contract/announcements.test.ts
+- [X] T071 [US5] Integration test for User Story 5 in tests/integration/user-story-5.test.ts (exactly-once delivery per version)
+- [X] T072 [US5] Run contract and integration tests for US5, verify all pass
 
 **Dev-B Complete** → Return to parent (no commit)
 
@@ -374,13 +374,13 @@ git commit -m "feat: Phase 10 - CLI & Documentation"
 
 ### Tasks
 
-- [ ] T073 [P] Implement CLI argument parsing in src/index.ts (--root, --handle, --space-default, --presence-ttl)
-- [ ] T074 [P] Implement environment variable support in src/index.ts (SWARMBBS_ROOT, SWARMBBS_HANDLE, etc.)
-- [ ] T075 [P] Add --help and --version flags in src/index.ts
-- [ ] T076 [P] Implement graceful shutdown handling in src/index.ts
-- [ ] T077 [P] Update package.json with bin entry and build scripts
-- [ ] T078 [P] Create comprehensive README.md with installation, usage, examples
-- [ ] T079 Build project and test CLI execution with `npm run build && node dist/index.js --help`
+- [X] T073 [P] Implement CLI argument parsing in src/index.ts (--root, --handle, --space-default, --presence-ttl)
+- [X] T074 [P] Implement environment variable support in src/index.ts (SWARMBBS_ROOT, SWARMBBS_HANDLE, etc.)
+- [X] T075 [P] Add --help and --version flags in src/index.ts
+- [X] T076 [P] Implement graceful shutdown handling in src/index.ts
+- [X] T077 [P] Update package.json with bin entry and build scripts
+- [X] T078 [P] Create comprehensive README.md with installation, usage, examples
+- [X] T079 Build project and test CLI execution with `npm run build && node dist/index.js --help`
 
 **Dev-C Complete** → Return to parent (no commit)
 
@@ -443,20 +443,20 @@ git commit -m "chore: Phase 11 - Final Validation & Polish"
 
 ### Implementation for User Story 6
 
-- [ ] T080 [P] [US6] Implement compaction begin in src/storage/compaction-impl.ts (freeze base, create delta file, track session)
-- [ ] T081 [P] [US6] Implement delta file writes in src/storage/compaction-impl.ts (divert new messages to delta)
-- [ ] T082 [P] [US6] Implement compaction commit in src/storage/compaction-impl.ts (snapshot + kept messages + delta replay, atomic rename)
-- [ ] T083 [P] [US6] Implement compaction abort in src/storage/compaction-impl.ts (merge delta back to base)
-- [ ] T084 [US6] Implement epoch bumping and min_available_seq in src/storage/compaction-impl.ts
-- [ ] T085 [US6] Implement compact_begin tool in src/tools/compaction.ts (validate no existing session, start compaction)
-- [ ] T086 [US6] Implement compact_commit tool in src/tools/compaction.ts (validate snapshot, commit with fsync)
-- [ ] T087 [US6] Implement compact_abort tool in src/tools/compaction.ts (cleanup and merge)
-- [ ] T088 [P] [US6] Contract test for compact_begin in tests/contract/compaction.test.ts (conflict detection)
-- [ ] T089 [P] [US6] Contract test for compact_commit in tests/contract/compaction.test.ts
-- [ ] T090 [P] [US6] Contract test for compact_abort in tests/contract/compaction.test.ts
-- [ ] T091 [P] [US6] Unit test for compaction protocol edge cases in tests/unit/compaction.test.ts (concurrent writes during compaction)
-- [ ] T092 [US6] Integration test for User Story 6 in tests/integration/user-story-6.test.ts (zero message loss, cursor clamping)
-- [ ] T093 [US6] Run contract, unit, and integration tests for US6, verify all pass
+- [X] T080 [P] [US6] Implement compaction begin in src/storage/compaction-impl.ts (freeze base, create delta file, track session)
+- [X] T081 [P] [US6] Implement delta file writes in src/storage/compaction-impl.ts (divert new messages to delta)
+- [X] T082 [P] [US6] Implement compaction commit in src/storage/compaction-impl.ts (snapshot + kept messages + delta replay, atomic rename)
+- [X] T083 [P] [US6] Implement compaction abort in src/storage/compaction-impl.ts (merge delta back to base)
+- [X] T084 [US6] Implement epoch bumping and min_available_seq in src/storage/compaction-impl.ts
+- [X] T085 [US6] Implement compact_begin tool in src/tools/compaction.ts (validate no existing session, start compaction)
+- [X] T086 [US6] Implement compact_commit tool in src/tools/compaction.ts (validate snapshot, commit with fsync)
+- [X] T087 [US6] Implement compact_abort tool in src/tools/compaction.ts (cleanup and merge)
+- [X] T088 [P] [US6] Contract test for compact_begin in tests/contract/compaction.test.ts (conflict detection)
+- [X] T089 [P] [US6] Contract test for compact_commit in tests/contract/compaction.test.ts
+- [X] T090 [P] [US6] Contract test for compact_abort in tests/contract/compaction.test.ts
+- [X] T091 [P] [US6] Unit test for compaction protocol edge cases in tests/unit/compaction.test.ts (concurrent writes during compaction)
+- [X] T092 [US6] Integration test for User Story 6 in tests/integration/user-story-6.test.ts (zero message loss, cursor clamping)
+- [X] T093 [US6] Run contract, unit, and integration tests for US6, verify all pass
 
 **Dev-A Complete** → Return to parent (no commit)
 
@@ -480,15 +480,15 @@ git commit -m "chore: Phase 11 - Final Validation & Polish"
 
 ### Tasks
 
-- [ ] T094 [P] Implement list_spaces tool in src/tools/lifecycle.ts (enumerate available spaces)
-- [ ] T095 [P] Implement list_threads tool in src/tools/lifecycle.ts (list threads in space, optionally include P2P)
-- [ ] T096 [P] Implement archive_space tool in src/tools/lifecycle.ts (move space to archive with timestamp)
-- [ ] T097 [P] Implement clear_space tool in src/tools/lifecycle.ts (delete space with confirmation)
-- [ ] T098 [P] Contract test for list_spaces in tests/contract/lifecycle.test.ts
-- [ ] T099 [P] Contract test for list_threads in tests/contract/lifecycle.test.ts
-- [ ] T100 [P] Contract test for archive_space in tests/contract/lifecycle.test.ts
-- [ ] T101 [P] Contract test for clear_space in tests/contract/lifecycle.test.ts (destructive hint, confirmation)
-- [ ] T102 Run contract tests for lifecycle tools, verify all pass
+- [X] T094 [P] Implement list_spaces tool in src/tools/lifecycle.ts (enumerate available spaces)
+- [X] T095 [P] Implement list_threads tool in src/tools/lifecycle.ts (list threads in space, optionally include P2P)
+- [X] T096 [P] Implement archive_space tool in src/tools/lifecycle.ts (move space to archive with timestamp)
+- [X] T097 [P] Implement clear_space tool in src/tools/lifecycle.ts (delete space with confirmation)
+- [X] T098 [P] Contract test for list_spaces in tests/contract/lifecycle.test.ts
+- [X] T099 [P] Contract test for list_threads in tests/contract/lifecycle.test.ts
+- [X] T100 [P] Contract test for archive_space in tests/contract/lifecycle.test.ts
+- [X] T101 [P] Contract test for clear_space in tests/contract/lifecycle.test.ts (destructive hint, confirmation)
+- [X] T102 Run contract tests for lifecycle tools, verify all pass
 
 **Dev-B Complete** → Return to parent (no commit)
 
@@ -511,15 +511,15 @@ git commit -m "chore: Phase 11 - Final Validation & Polish"
 
 ### Tasks
 
-- [ ] T103 Run all unit tests (`npm run test tests/unit/`), verify 100% pass rate
-- [ ] T104 Run all contract tests (`npm run test tests/contract/`), verify 100% pass rate
-- [ ] T105 Run all integration tests (`npm run test tests/integration/`), verify 100% pass rate
-- [ ] T106 Validate quickstart scenarios from quickstart.md work end-to-end
-- [ ] T107 [P] Test npx execution: `npx swarmbbs start --root ./test-data --handle test-agent`
-- [ ] T108 [P] Performance validation: verify <100ms latency for send+poll round-trip
-- [ ] T109 [P] Performance validation: verify >1000 msg/sec sustained write throughput
-- [ ] T110 [P] Verify error messages are actionable with clear next steps
-- [ ] T111 [P] Code review for constitutional compliance (file sizes <500 lines, modular architecture)
+- [X] T103 Run all unit tests (`npm run test tests/unit/`), verify 100% pass rate
+- [X] T104 Run all contract tests (`npm run test tests/contract/`), verify 100% pass rate
+- [X] T105 Run all integration tests (`npm run test tests/integration/`), verify 100% pass rate
+- [X] T106 Validate quickstart scenarios from quickstart.md work end-to-end
+- [X] T107 [P] Test npx execution: `npx swarmbbs start --root ./test-data --handle test-agent`
+- [X] T108 [P] Performance validation: verify <100ms latency for send+poll round-trip
+- [X] T109 [P] Performance validation: verify >1000 msg/sec sustained write throughput
+- [X] T110 [P] Verify error messages are actionable with clear next steps
+- [X] T111 [P] Code review for constitutional compliance (file sizes <500 lines, modular architecture)
 
 **Dev-C Complete** → Return to parent (no commit)
 
