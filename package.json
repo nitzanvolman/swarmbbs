@@ -18,7 +18,19 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit"
   },
-  "keywords": ["mcp", "bulletin-board", "agent-coordination", "messaging"],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "bulletin-board",
+    "bbs",
+    "agent-coordination",
+    "ai-agents",
+    "messaging",
+    "async-communication",
+    "p2p",
+    "presence-tracking",
+    "swarm-intelligence"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {

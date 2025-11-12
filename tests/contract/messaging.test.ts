@@ -363,4 +363,112 @@ describe('Messaging Tools - Contract Tests', () => {
       expect(Math.max(...seqs)).toBe(20);
     });
   });
+
+  describe('blocking poll with timeout (US3)', () => {
+    it('should return immediately when messages are already available', async () => {
+      const sendTool = tools.get('swarmbbs.send_message')!;
+      const pollTool = tools.get('swarmbbs.poll_messages')!;
+
+      // Send a message
+      await sendTool.handler({ thread: 'test-thread', text: 'Message 1' }, config);
+
+      // Poll with timeout - should return immediately
+      const startTime = Date.now();
+      const result = await pollTool.handler(
+        { threads: ['test-thread'], timeout_ms: 5000 },
+        config
+      );
+      const elapsed = Date.now() - startTime;
+
+      expect((result as any).timed_out).toBe(false);
+      expect((result as any).messages['test-thread']).toHaveLength(1);
+      expect(elapsed).toBeLessThan(1000); // Should be very fast
+    });
+
+    it('should block and return early when message arrives before timeout', async () => {
+      const sendTool = tools.get('swarmbbs.send_message')!;
+      const pollTool = tools.get('swarmbbs.poll_messages')!;
+
+      // Start polling with 5 second timeout
+      const pollPromise = pollTool.handler(
+        { threads: ['test-thread'], timeout_ms: 5000 },
+        config
+      );
+
+      // Wait 500ms, then send a message
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await sendTool.handler({ thread: 'test-thread', text: 'Late message' }, config);
+
+      // Poll should complete before full timeout
+      const startTime = Date.now();
+      const result = await pollPromise;
+      const elapsed = Date.now() - startTime;
+
+      expect((result as any).timed_out).toBe(false);
+      expect((result as any).messages['test-thread']).toHaveLength(1);
+      expect((result as any).messages['test-thread'][0].text).toBe('Late message');
+      expect(elapsed).toBeLessThan(4500); // Should not wait full 5 seconds
+    });
+
+    it('should timeout when no messages arrive within timeout period', async () => {
+      const pollTool = tools.get('swarmbbs.poll_messages')!;
+
+      // Poll with short timeout and no messages sent
+      const startTime = Date.now();
+      const result = await pollTool.handler(
+        { threads: ['empty-thread'], timeout_ms: 1000 },
+        config
+      );
+      const elapsed = Date.now() - startTime;
+
+      expect((result as any).timed_out).toBe(true);
+      expect((result as any).messages['empty-thread']).toHaveLength(0);
+      expect(elapsed).toBeGreaterThanOrEqual(900); // Should wait approximately full timeout
+      expect(elapsed).toBeLessThan(1500);
+    });
+
+    it('should poll multiple threads in parallel and return on first message', async () => {
+      const sendTool = tools.get('swarmbbs.send_message')!;
+      const pollTool = tools.get('swarmbbs.poll_messages')!;
+
+      // Start polling three threads
+      const pollPromise = pollTool.handler(
+        { threads: ['thread-1', 'thread-2', 'thread-3'], timeout_ms: 5000 },
+        config
+      );
+
+      // Wait 300ms, then send message to thread-2
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await sendTool.handler({ thread: 'thread-2', text: 'Message in thread 2' }, config);
+
+      // Poll should return early with message from thread-2
+      const result = await pollPromise;
+
+      expect((result as any).timed_out).toBe(false);
+      expect((result as any).messages['thread-1']).toHaveLength(0);
+      expect((result as any).messages['thread-2']).toHaveLength(1);
+      expect((result as any).messages['thread-2'][0].text).toBe('Message in thread 2');
+      expect((result as any).messages['thread-3']).toHaveLength(0);
+    });
+
+    it('should handle timeout_ms=0 as non-blocking immediate poll', async () => {
+      const sendTool = tools.get('swarmbbs.send_message')!;
+      const pollTool = tools.get('swarmbbs.poll_messages')!;
+
+      // Send message
+      await sendTool.handler({ thread: 'test-thread', text: 'Message' }, config);
+
+      // Poll with timeout=0 should return immediately
+      const startTime = Date.now();
+      const result = await pollTool.handler(
+        { threads: ['test-thread'], timeout_ms: 0 },
+        config
+      );
+      const elapsed = Date.now() - startTime;
+
+      expect((result as any).timed_out).toBe(false);
+      expect((result as any).messages['test-thread']).toHaveLength(1);
+      expect(elapsed).toBeLessThan(500);
+    });
+  });
 });
