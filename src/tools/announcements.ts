@@ -4,6 +4,7 @@
  * Tools for space-wide announcements with version tracking and dynamic "Who's online" sections
  */
 
+import type { ToolDefinition, ServerConfig } from '../server/mcp-server.js';
 import type { Announcement } from '../types/state.js';
 import {
   getAnnouncement,
@@ -302,5 +303,115 @@ export async function announcementGet(
     content: fullContent,
     has_seen: hasSeen,
   };
+}
+
+// ============================================================================
+// MCP Tool Definitions
+// ============================================================================
+
+/**
+ * announcement_set tool
+ */
+const announcementSetTool: ToolDefinition = {
+  definition: {
+    name: 'swarmbbs.announcement_set',
+    description: 'Set or replace the space-wide announcement (bumps version, invalidates all "has_seen" flags)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        space: {
+          type: 'string',
+          pattern: '^[A-Za-z0-9._-]+$',
+          description: 'Target space (defaults to server-configured space)',
+        },
+        content: {
+          type: 'string',
+          maxLength: 65536,
+          description: 'Announcement content (max 64 KiB)',
+        },
+        content_type: {
+          type: 'string',
+          description: 'Content type (defaults to "text/plain")',
+        },
+      },
+      required: ['content'],
+      additionalProperties: false,
+    },
+  },
+  handler: async (args: Record<string, unknown>, config: ServerConfig) => {
+    const content = args.content as string;
+    const contentType = (args.content_type as 'text/plain' | 'text/markdown') || 'text/plain';
+    const space = (args.space as string) || config.defaultSpace;
+
+    return announcementSet(config.rootDir, space, { content, content_type: contentType, space });
+  },
+};
+
+/**
+ * announcement_append tool
+ */
+const announcementAppendTool: ToolDefinition = {
+  definition: {
+    name: 'swarmbbs.announcement_append',
+    description: 'Append content to existing announcement (bumps version, invalidates all "has_seen" flags)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        space: {
+          type: 'string',
+          pattern: '^[A-Za-z0-9._-]+$',
+          description: 'Target space (defaults to server-configured space)',
+        },
+        content: {
+          type: 'string',
+          maxLength: 65536,
+          description: 'Content to append (max 64 KiB total after appending)',
+        },
+      },
+      required: ['content'],
+      additionalProperties: false,
+    },
+  },
+  handler: async (args: Record<string, unknown>, config: ServerConfig) => {
+    const content = args.content as string;
+    const space = (args.space as string) || config.defaultSpace;
+
+    return announcementAppend(config.rootDir, space, { content, space });
+  },
+};
+
+/**
+ * announcement_get tool
+ */
+const announcementGetTool: ToolDefinition = {
+  definition: {
+    name: 'swarmbbs.announcement_get',
+    description: 'Retrieve the current announcement with dynamic "who\'s online" section (automatically marks unseen announcements as seen)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        space: {
+          type: 'string',
+          pattern: '^[A-Za-z0-9._-]+$',
+          description: 'Target space (defaults to server-configured space)',
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  handler: async (args: Record<string, unknown>, config: ServerConfig) => {
+    const space = (args.space as string) || config.defaultSpace;
+
+    return announcementGet(config.rootDir, config.handle, space, config.presenceTTL, { space });
+  },
+};
+
+/**
+ * Register all announcement tools
+ */
+export function registerAnnouncementTools(registry: Map<string, ToolDefinition>): void {
+  registry.set('swarmbbs.announcement_set', announcementSetTool);
+  registry.set('swarmbbs.announcement_append', announcementAppendTool);
+  registry.set('swarmbbs.announcement_get', announcementGetTool);
 }
 

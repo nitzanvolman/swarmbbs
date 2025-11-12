@@ -4,6 +4,7 @@
  * Tools for agent presence tracking, profile management, and discovery
  */
 
+import type { ToolDefinition, ServerConfig } from '../server/mcp-server.js';
 import type { Profile } from '../types/state.js';
 import {
   getProfile,
@@ -229,5 +230,117 @@ export async function whoOnline(
     presence_ttl_s: presenceTtl,
     agents,
   };
+}
+
+// ============================================================================
+// MCP Tool Definitions
+// ============================================================================
+
+/**
+ * introduce tool
+ */
+const introduceTool: ToolDefinition = {
+  definition: {
+    name: 'swarmbbs.introduce',
+    description: 'Register or update agent profile with role and expertise information',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        space: {
+          type: 'string',
+          pattern: '^[A-Za-z0-9._-]+$',
+          description: 'Target space (defaults to server-configured space)',
+        },
+        role: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 128,
+          description: 'Agent role or purpose (1-128 characters)',
+        },
+        expertise: {
+          type: 'array',
+          items: { type: 'string' },
+          maxItems: 20,
+          description: 'List of expertise areas or capabilities (max 20)',
+        },
+      },
+      required: ['role'],
+      additionalProperties: false,
+    },
+  },
+  handler: async (args: Record<string, unknown>, config: ServerConfig) => {
+    const role = args.role as string;
+    const expertise = (args.expertise as string[]) || [];
+    const space = (args.space as string) || config.defaultSpace;
+
+    return introduce(config.rootDir, config.handle, space, { role, expertise, space });
+  },
+};
+
+/**
+ * send_heartbeat tool
+ */
+const sendHeartbeatTool: ToolDefinition = {
+  definition: {
+    name: 'swarmbbs.send_heartbeat',
+    description: 'Send a heartbeat to update presence status and prevent timeout',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        space: {
+          type: 'string',
+          pattern: '^[A-Za-z0-9._-]+$',
+          description: 'Target space (defaults to server-configured space)',
+        },
+        status: {
+          type: 'string',
+          enum: ['available', 'busy', 'away'],
+          description: 'Current status (defaults to "available")',
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  handler: async (args: Record<string, unknown>, config: ServerConfig) => {
+    const status = (args.status as 'available' | 'busy' | 'away') || 'available';
+    const space = (args.space as string) || config.defaultSpace;
+
+    return sendHeartbeat(config.rootDir, config.handle, space, config.presenceTTL, { status, space });
+  },
+};
+
+/**
+ * who_online tool
+ */
+const whoOnlineTool: ToolDefinition = {
+  definition: {
+    name: 'swarmbbs.who_online',
+    description: 'Query which agents are currently online (based on recent activity and heartbeats)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        space: {
+          type: 'string',
+          pattern: '^[A-Za-z0-9._-]+$',
+          description: 'Target space (defaults to server-configured space)',
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  handler: async (args: Record<string, unknown>, config: ServerConfig) => {
+    const space = (args.space as string) || config.defaultSpace;
+
+    return whoOnline(config.rootDir, space, config.presenceTTL, { space });
+  },
+};
+
+/**
+ * Register all presence tools
+ */
+export function registerPresenceTools(registry: Map<string, ToolDefinition>): void {
+  registry.set('swarmbbs.introduce', introduceTool);
+  registry.set('swarmbbs.send_heartbeat', sendHeartbeatTool);
+  registry.set('swarmbbs.who_online', whoOnlineTool);
 }
 

@@ -4,6 +4,7 @@
  * Provides compact_begin, compact_commit, and compact_abort tools
  */
 
+import type { ToolDefinition, ServerConfig } from '../server/mcp-server.js';
 import type { MessageEvent } from '../types/events.js';
 import { beginCompaction, commitCompaction, abortCompaction } from '../storage/compaction-impl.js';
 import { assertValidName } from '../utils/validation.js';
@@ -150,5 +151,174 @@ export async function compactAbort(
     delta_messages_merged: result.delta_messages_merged,
     note,
   };
+}
+
+// ============================================================================
+// MCP Tool Definitions
+// ============================================================================
+
+/**
+ * compact_begin tool
+ */
+const compactBeginTool: ToolDefinition = {
+  definition: {
+    name: 'swarmbbs.compact_begin',
+    description: 'Begin two-phase compaction on a thread (creates delta file for new messages during compaction)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        space: {
+          type: 'string',
+          pattern: '^[A-Za-z0-9._-]+$',
+          description: 'Target space (defaults to server-configured space)',
+        },
+        thread: {
+          type: 'string',
+          pattern: '^[A-Za-z0-9._-]+$',
+          description: 'Thread to compact',
+        },
+      },
+      required: ['thread'],
+      additionalProperties: false,
+    },
+  },
+  handler: async (args: Record<string, unknown>, config: ServerConfig) => {
+    const thread = args.thread as string;
+    const space = (args.space as string) || config.defaultSpace;
+
+    return compactBegin(config.rootDir, space, { thread, space });
+  },
+};
+
+/**
+ * compact_commit tool
+ */
+const compactCommitTool: ToolDefinition = {
+  definition: {
+    name: 'swarmbbs.compact_commit',
+    description: 'Commit compaction with snapshot summary (bumps epoch, clears old messages, merges delta)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        space: {
+          type: 'string',
+          pattern: '^[A-Za-z0-9._-]+$',
+          description: 'Target space (defaults to server-configured space)',
+        },
+        thread: {
+          type: 'string',
+          pattern: '^[A-Za-z0-9._-]+$',
+          description: 'Thread being compacted',
+        },
+        compaction_id: {
+          type: 'string',
+          description: 'Compaction ID from compact_begin',
+        },
+        snapshot: {
+          type: 'object',
+          properties: {
+            covers_from_seq: { type: 'number' },
+            covers_to_seq: { type: 'number' },
+            summary: {
+              description: 'Summary of compacted messages (string or structured object)',
+            },
+            meta: {
+              type: 'object',
+              description: 'Optional metadata',
+            },
+          },
+          required: ['covers_from_seq', 'covers_to_seq', 'summary'],
+        },
+        keep_messages: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              seq: { type: 'number' },
+              ts: { type: 'string' },
+              from: { type: 'string' },
+              text: { type: 'string' },
+            },
+            required: ['seq', 'ts', 'from', 'text'],
+          },
+          description: 'Optional messages to preserve from the compacted range',
+        },
+      },
+      required: ['thread', 'compaction_id', 'snapshot'],
+      additionalProperties: false,
+    },
+  },
+  handler: async (args: Record<string, unknown>, config: ServerConfig) => {
+    const thread = args.thread as string;
+    const compactionId = args.compaction_id as string;
+    const snapshot = args.snapshot as {
+      covers_from_seq: number;
+      covers_to_seq: number;
+      summary: string | Record<string, unknown>;
+      meta?: Record<string, unknown>;
+    };
+    const keepMessages = args.keep_messages as Array<{
+      seq: number;
+      ts: string;
+      from: string;
+      text: string;
+    }> | undefined;
+    const space = (args.space as string) || config.defaultSpace;
+
+    return compactCommit(config.rootDir, space, {
+      thread,
+      compaction_id: compactionId,
+      snapshot,
+      keep_messages: keepMessages,
+      space,
+    });
+  },
+};
+
+/**
+ * compact_abort tool
+ */
+const compactAbortTool: ToolDefinition = {
+  definition: {
+    name: 'swarmbbs.compact_abort',
+    description: 'Abort compaction and merge delta messages back to main thread (no epoch change)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        space: {
+          type: 'string',
+          pattern: '^[A-Za-z0-9._-]+$',
+          description: 'Target space (defaults to server-configured space)',
+        },
+        thread: {
+          type: 'string',
+          pattern: '^[A-Za-z0-9._-]+$',
+          description: 'Thread being compacted',
+        },
+        compaction_id: {
+          type: 'string',
+          description: 'Compaction ID from compact_begin',
+        },
+      },
+      required: ['thread', 'compaction_id'],
+      additionalProperties: false,
+    },
+  },
+  handler: async (args: Record<string, unknown>, config: ServerConfig) => {
+    const thread = args.thread as string;
+    const compactionId = args.compaction_id as string;
+    const space = (args.space as string) || config.defaultSpace;
+
+    return compactAbort(config.rootDir, space, { thread, compaction_id: compactionId, space });
+  },
+};
+
+/**
+ * Register all compaction tools
+ */
+export function registerCompactionTools(registry: Map<string, ToolDefinition>): void {
+  registry.set('swarmbbs.compact_begin', compactBeginTool);
+  registry.set('swarmbbs.compact_commit', compactCommitTool);
+  registry.set('swarmbbs.compact_abort', compactAbortTool);
 }
 

@@ -4,6 +4,7 @@
  * Private agent-to-agent messaging with canonical thread naming
  */
 
+import type { ToolDefinition, ServerConfig } from '../server/mcp-server.js';
 import { canonicalP2PName, sanitizeText, validateMessageSize, getByteLength } from '../utils/validation.js';
 import { badRequest, payloadTooLarge } from '../utils/errors.js';
 import { appendMessage, getThreadPath } from '../storage/thread-ops.js';
@@ -148,5 +149,112 @@ export async function sendP2P(
     from: event.from,
     text: event.text,
   };
+}
+
+// ============================================================================
+// MCP Tool Definitions
+// ============================================================================
+
+/**
+ * open_p2p tool
+ */
+const openP2PTool: ToolDefinition = {
+  definition: {
+    name: 'swarmbbs.open_p2p',
+    description: 'Open or retrieve a P2P thread between caller and peer. Thread names are canonical (handles lowercased and alphabetically sorted).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        space: {
+          type: 'string',
+          pattern: '^[A-Za-z0-9._-]+$',
+          description: 'Target space (defaults to server-configured space)',
+        },
+        peer_handle: {
+          type: 'string',
+          description: 'Handle of the peer agent to open P2P channel with',
+        },
+      },
+      required: ['peer_handle'],
+      additionalProperties: false,
+    },
+  },
+  handler: async (args: Record<string, unknown>, config: ServerConfig) => {
+    const peerHandle = args.peer_handle as string;
+    const space = (args.space as string) || config.defaultSpace;
+
+    if (!peerHandle || typeof peerHandle !== 'string') {
+      throw badRequest(
+        'Missing or invalid "peer_handle" parameter',
+        { field: 'peer_handle' },
+        'Provide the handle of the peer agent'
+      );
+    }
+
+    return openP2P(config.rootDir, config.handle, space, { peer_handle: peerHandle, space });
+  },
+};
+
+/**
+ * send_p2p tool
+ */
+const sendP2PTool: ToolDefinition = {
+  definition: {
+    name: 'swarmbbs.send_p2p',
+    description: 'Send a P2P message to a peer agent (combines open_p2p and send_message in one call)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        space: {
+          type: 'string',
+          pattern: '^[A-Za-z0-9._-]+$',
+          description: 'Target space (defaults to server-configured space)',
+        },
+        peer_handle: {
+          type: 'string',
+          description: 'Handle of the peer agent to send message to',
+        },
+        text: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 8192,
+          description: 'Message content (newlines will be sanitized)',
+        },
+      },
+      required: ['peer_handle', 'text'],
+      additionalProperties: false,
+    },
+  },
+  handler: async (args: Record<string, unknown>, config: ServerConfig) => {
+    const peerHandle = args.peer_handle as string;
+    const text = args.text as string;
+    const space = (args.space as string) || config.defaultSpace;
+
+    if (!peerHandle || typeof peerHandle !== 'string') {
+      throw badRequest(
+        'Missing or invalid "peer_handle" parameter',
+        { field: 'peer_handle' },
+        'Provide the handle of the peer agent'
+      );
+    }
+
+    if (!text || typeof text !== 'string') {
+      throw badRequest(
+        'Missing or invalid "text" parameter',
+        { field: 'text' },
+        'Provide non-empty message text'
+      );
+    }
+
+    return sendP2P(config.rootDir, config.handle, space, { peer_handle: peerHandle, text, space });
+  },
+};
+
+/**
+ * Register all P2P tools
+ */
+export function registerP2PTools(registry: Map<string, ToolDefinition>): void {
+  registry.set('swarmbbs.open_p2p', openP2PTool);
+  registry.set('swarmbbs.send_p2p', sendP2PTool);
 }
 
