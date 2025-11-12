@@ -1,0 +1,154 @@
+/**
+ * Thread Compaction Tools for MCP
+ *
+ * Provides compact_begin, compact_commit, and compact_abort tools
+ */
+
+import type { MessageEvent } from '../types/events.js';
+import { beginCompaction, commitCompaction, abortCompaction } from '../storage/compaction-impl.js';
+import { assertValidName } from '../utils/validation.js';
+
+/**
+ * compact_begin tool - Start two-phase compaction
+ */
+export async function compactBegin(
+  rootDir: string,
+  defaultSpace: string,
+  input: {
+    space?: string;
+    thread: string;
+  }
+): Promise<{
+  success: boolean;
+  space: string;
+  thread: string;
+  compaction_id: string;
+  base_seq: number;
+  epoch: number;
+  note: string;
+}> {
+  const space = input.space || defaultSpace;
+
+  // Validate names
+  assertValidName(space, 'space');
+  assertValidName(input.thread, 'thread');
+
+  const result = await beginCompaction(rootDir, space, input.thread);
+
+  return {
+    success: true,
+    space,
+    thread: input.thread,
+    compaction_id: result.compaction_id,
+    base_seq: result.base_seq,
+    epoch: result.epoch,
+    note: `Compaction started. Read messages 1-${result.base_seq}, generate summary, then call compact_commit or compact_abort. New messages are being written to delta file.`,
+  };
+}
+
+/**
+ * compact_commit tool - Commit compaction with snapshot
+ */
+export async function compactCommit(
+  rootDir: string,
+  defaultSpace: string,
+  input: {
+    space?: string;
+    thread: string;
+    compaction_id: string;
+    snapshot: {
+      covers_from_seq: number;
+      covers_to_seq: number;
+      summary: string | Record<string, unknown>;
+      meta?: Record<string, unknown>;
+    };
+    keep_messages?: Array<{
+      seq: number;
+      ts: string;
+      from: string;
+      text: string;
+    }>;
+  }
+): Promise<{
+  success: boolean;
+  space: string;
+  thread: string;
+  new_epoch: number;
+  min_available_seq: number;
+  message_count: number;
+  delta_replayed: number;
+}> {
+  const space = input.space || defaultSpace;
+
+  // Validate names
+  assertValidName(space, 'space');
+  assertValidName(input.thread, 'thread');
+
+  // Convert keep_messages to MessageEvent format if provided
+  const keepMessages: MessageEvent[] | undefined = input.keep_messages?.map(msg => ({
+    type: 'msg' as const,
+    seq: msg.seq,
+    ts: msg.ts,
+    from: msg.from,
+    text: msg.text,
+  }));
+
+  const result = await commitCompaction(
+    rootDir,
+    space,
+    input.thread,
+    input.compaction_id,
+    input.snapshot,
+    keepMessages
+  );
+
+  return {
+    success: true,
+    space,
+    thread: input.thread,
+    new_epoch: result.new_epoch,
+    min_available_seq: result.min_available_seq,
+    message_count: result.message_count,
+    delta_replayed: result.delta_replayed,
+  };
+}
+
+/**
+ * compact_abort tool - Abort compaction and merge delta
+ */
+export async function compactAbort(
+  rootDir: string,
+  defaultSpace: string,
+  input: {
+    space?: string;
+    thread: string;
+    compaction_id: string;
+  }
+): Promise<{
+  success: boolean;
+  space: string;
+  thread: string;
+  delta_messages_merged: number;
+  note: string;
+}> {
+  const space = input.space || defaultSpace;
+
+  // Validate names
+  assertValidName(space, 'space');
+  assertValidName(input.thread, 'thread');
+
+  const result = await abortCompaction(rootDir, space, input.thread, input.compaction_id);
+
+  const note = result.delta_messages_merged > 0
+    ? `Compaction aborted successfully. All ${result.delta_messages_merged} delta messages merged back to main thread. Thread state is unchanged from user perspective.`
+    : 'Compaction aborted successfully. No delta messages to merge. Thread state is unchanged.';
+
+  return {
+    success: true,
+    space,
+    thread: input.thread,
+    delta_messages_merged: result.delta_messages_merged,
+    note,
+  };
+}
+

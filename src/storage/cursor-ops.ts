@@ -13,6 +13,7 @@ import { assertValidName } from '../utils/validation.js';
 
 /**
  * Get cursor file path
+ * Supports both regular threads and P2P threads (p2p/<handle-a>__<handle-b>)
  */
 export function getCursorPath(
   rootDir: string,
@@ -21,6 +22,16 @@ export function getCursorPath(
   thread: string
 ): string {
   assertValidName(space, 'space');
+
+  // P2P threads have format p2p/<handle-a>__<handle-b>
+  // They are stored in cursors/<handle>/p2p/<handle-a>__<handle-b>.json
+  if (thread.startsWith('p2p/')) {
+    const p2pName = thread.slice(4); // Remove 'p2p/' prefix
+    assertValidName(p2pName, 'P2P thread');
+    return join(rootDir, 'spaces', space, 'state', 'cursors', handle, 'p2p', `${p2pName}.json`);
+  }
+
+  // Regular threads are stored in cursors/<handle>/<thread>.json
   assertValidName(thread, 'thread');
   return join(rootDir, 'spaces', space, 'state', 'cursors', handle, `${thread}.json`);
 }

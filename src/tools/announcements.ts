@@ -303,3 +303,4 @@ export async function announcementGet(
     has_seen: hasSeen,
   };
 }
+

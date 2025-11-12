@@ -20,9 +20,20 @@ const threadMetadataCache = new Map<string, ThreadMetadata>();
 
 /**
  * Get thread file path
+ * Supports both regular threads and P2P threads (p2p/<handle-a>__<handle-b>)
  */
 export function getThreadPath(rootDir: string, space: string, thread: string): string {
   assertValidName(space, 'space');
+
+  // P2P threads have format p2p/<handle-a>__<handle-b>
+  // They are stored in threads/p2p/<handle-a>__<handle-b>.log
+  if (thread.startsWith('p2p/')) {
+    const p2pName = thread.slice(4); // Remove 'p2p/' prefix
+    assertValidName(p2pName, 'P2P thread');
+    return join(rootDir, 'spaces', space, 'threads', 'p2p', `${p2pName}.log`);
+  }
+
+  // Regular threads are stored in threads/<name>.log
   assertValidName(thread, 'thread');
   return join(rootDir, 'spaces', space, 'threads', `${thread}.log`);
 }
