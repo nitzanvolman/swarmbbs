@@ -75,8 +75,8 @@ describe('E2E: FizzBuzz Round-Robin Game', () => {
     const messages = E2EVerifier.getMessagesInOrder(events);
     const gameMessages = messages.filter(m => /^\d+:/.test(m.text));
 
-    // Verify we got at least some game messages
-    expect(gameMessages.length).toBeGreaterThan(0);
+    // Verify we got at least 10 game messages showing multi-agent coordination
+    expect(gameMessages.length).toBeGreaterThanOrEqual(10);
 
     // Verify FizzBuzz correctness
     for (const msg of gameMessages) {
