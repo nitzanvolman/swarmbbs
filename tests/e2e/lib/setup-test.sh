@@ -26,6 +26,7 @@ setup_test() {
 generate_agent_config() {
   local handle=$1
   local test_name=$2
+  local observations=$3  # Optional: agent-specific observations
   local test_dir="test-data/e2e/$test_name"
   local root_dir="$(cd "$test_dir" && pwd)/swarmbbs-data"
 
@@ -53,6 +54,9 @@ EOF
     fizzbuzz*)
       prompt_file="tests/e2e/fixtures/fizzbuzz-prompt.txt"
       ;;
+    threehats*)
+      prompt_file="tests/e2e/fixtures/threehats-prompt.txt"
+      ;;
     *)
       # Try to find a matching prompt file
       if [ -f "tests/e2e/fixtures/${test_name}-prompt.txt" ]; then
@@ -68,6 +72,12 @@ EOF
   if [ -f "$prompt_file" ]; then
     # Replace [YourHandle] with actual handle in the prompt
     sed "s/\[YourHandle\]/$handle/g" "$prompt_file" > "$test_dir/prompt-$handle.txt"
+
+    # Replace [Observations] with agent-specific observations if provided
+    if [ -n "$observations" ]; then
+      sed -i "s/\[Observations\]/$observations/g" "$test_dir/prompt-$handle.txt"
+    fi
+
     echo "    ✓ Config and prompt ready"
   else
     echo "    Error: Prompt file not found: $prompt_file"

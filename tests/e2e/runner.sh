@@ -31,11 +31,23 @@ echo "======================================"
 setup_test "$TEST_NAME" "$ROOT_DIR" "$SPACE"
 
 # Generate configs and prompts for each agent
-for i in $(seq 1 $NUM_AGENTS); do
-  # Convert 1,2,3 to A,B,C
-  HANDLE="Agent$(echo $i | sed 's/1/A/;s/2/B/;s/3/C/')"
-  generate_agent_config "$HANDLE" "$TEST_NAME"
-done
+# Special handling for tests that need per-agent observations
+if [[ "$TEST_NAME" == "threehats" ]]; then
+  # Three Hats: [B, B, R] configuration
+  # AgentA (Blue) sees: AgentB=Blue, AgentC=Red
+  # AgentB (Blue) sees: AgentA=Blue, AgentC=Red
+  # AgentC (Red) sees: AgentA=Blue, AgentB=Blue
+  generate_agent_config "AgentA" "$TEST_NAME" "You see: AgentB has a Blue hat, AgentC has a Red hat"
+  generate_agent_config "AgentB" "$TEST_NAME" "You see: AgentA has a Blue hat, AgentC has a Red hat"
+  generate_agent_config "AgentC" "$TEST_NAME" "You see: AgentA has a Blue hat, AgentB has a Blue hat"
+else
+  # Default: generate same config for all agents
+  for i in $(seq 1 $NUM_AGENTS); do
+    # Convert 1,2,3 to A,B,C
+    HANDLE="Agent$(echo $i | sed 's/1/A/;s/2/B/;s/3/C/')"
+    generate_agent_config "$HANDLE" "$TEST_NAME"
+  done
+fi
 
 # Launch all agents in background (no stagger - let them race)
 echo ""

@@ -15,12 +15,16 @@ wait_for_completion() {
   local min_agents=2
   case "$test_name" in
     fizzbuzz*)
-      min_messages=20  # At least 5 FizzBuzz messages
+      min_messages=20  # At least 20 FizzBuzz messages
       min_agents=3    # All 3 agents should participate
       ;;
     smoke*)
       min_messages=2  # At least 2 greetings
       min_agents=2    # At least 2 agents
+      ;;
+    threehats*)
+      min_messages=3  # All 3 agents should announce their hat color
+      min_agents=3    # All 3 agents should participate
       ;;
   esac
 
