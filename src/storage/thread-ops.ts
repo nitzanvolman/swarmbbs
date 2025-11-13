@@ -40,6 +40,11 @@ export function getThreadPath(rootDir: string, space: string, thread: string): s
 
 /**
  * Get or initialize thread metadata
+ *
+ * IMPORTANT: Always reads current_seq from disk to prevent sequence number
+ * collisions when multiple processes write to the same thread.
+ * EXCEPTION: During compaction, current_seq tracks delta messages in memory
+ * since they're not in the main file yet.
  */
 export async function getThreadMetadata(
   rootDir: string,
@@ -47,23 +52,25 @@ export async function getThreadMetadata(
   thread: string
 ): Promise<ThreadMetadata> {
   const key = getThreadKey(space, thread);
-
-  // Check cache
-  if (threadMetadataCache.has(key)) {
-    return threadMetadataCache.get(key)!;
-  }
-
-  // Load from disk
   const threadPath = getThreadPath(rootDir, space, thread);
-  const currentSeq = await getCurrentSeq(threadPath);
+
+  // Check cache for compaction state
+  const cached = threadMetadataCache.get(key);
+
+  // During compaction, use cached current_seq (tracks delta file writes)
+  // Otherwise, always read from disk to handle multi-process writes
+  const currentSeq = cached?.compaction_state
+    ? cached.current_seq
+    : await getCurrentSeq(threadPath);
 
   const metadata: ThreadMetadata = {
     current_seq: currentSeq,
-    epoch: 0,
-    min_available_seq: 0,
-    compaction_state: null,
+    epoch: cached?.epoch ?? 0,
+    min_available_seq: cached?.min_available_seq ?? 0,
+    compaction_state: cached?.compaction_state ?? null,
   };
 
+  // Update cache with fresh data
   threadMetadataCache.set(key, metadata);
   return metadata;
 }
