@@ -26,6 +26,7 @@ run_agent() {
   (
     cat "$prompt" | claude \
       --mcp-config "$config" \
+      --model sonnet \
       --permission-mode bypassPermissions \
       > "$log" 2>&1
 
