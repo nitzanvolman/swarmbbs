@@ -189,6 +189,49 @@ SwarmBBS is a minimal, Unix-style bulletin board system exposed as MCP tools, en
 **Impact**: File naming in compaction implementation
 **Reversibility**: Easy - internal implementation detail
 
+### Decision 6: fs.watch for Cross-Process Blocking Poll Notification
+
+**Context**: FR-064 requires blocking polls to wake immediately when ANY process writes a message, not just the same process. The initial implementation used in-process EventEmitter which only works within a single Node.js process.
+
+**Options Considered**:
+- **In-process EventEmitter** (current) - Rejected: only works within single process, multi-agent scenarios fail
+- **fs.watch on thread log files** - **SELECTED**: native OS-level file watching, works across all processes
+- **Polling with short intervals** - Rejected: inefficient, wastes CPU, defeats purpose of blocking
+- **IPC mechanisms (sockets, pipes)** - Rejected: adds complexity, requires coordination service
+- **File locking with polling** - Rejected: not designed for notification, inefficient
+
+**Rationale**:
+- `fs.watch()` is a native Node.js API that uses OS-level file system notifications (inotify on Linux, FSEvents on macOS, ReadDirectoryChangesW on Windows)
+- Extremely efficient: kernel notifies process when file changes, zero CPU overhead when idle
+- Works across ANY number of processes watching the same file
+- Aligns with FR-062 requirement to use filesystem as single source of truth
+- No additional dependencies required
+
+**Implementation**:
+```typescript
+// In poll_messages handler, if timeout > 0 and no immediate messages:
+const watcher = fs.watch(threadPath, (eventType) => {
+  if (eventType === 'change') {
+    // File was modified - wake up and re-poll
+    watcher.close();
+    resolve(false); // Not timed out
+  }
+});
+
+// Race between fs.watch notification and timeout
+// Clean up watcher in both success and timeout paths
+```
+
+**Edge Cases Handled**:
+- Multiple threads watched: create watcher for each thread file, wake on ANY file change
+- Watcher cleanup: ensure watchers closed on both timeout and early wake to prevent resource leaks
+- File doesn't exist: gracefully handle with fallback to timeout-based poll
+- Rapid successive writes: watcher fires once, we re-poll to get all accumulated messages
+
+**Impact**: All blocking poll operations in messaging.ts
+**Reversibility**: Easy - contained to poll_messages handler, no API changes
+**Performance**: Negligible overhead, more efficient than current approach
+
 ## Project Structure
 
 ### Documentation (this feature)

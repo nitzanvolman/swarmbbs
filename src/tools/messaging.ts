@@ -5,6 +5,7 @@
  */
 
 import { EventEmitter } from 'events';
+import type { FSWatcher } from 'fs';
 import type { ToolDefinition, ServerConfig } from '../server/mcp-server.js';
 import { appendMessage, readThreadAfterSeq, getThreadMetadata } from '../storage/thread-ops.js';
 import {
@@ -275,54 +276,50 @@ const pollMessagesTool: ToolDefinition = {
     // First, do an immediate poll to check for existing messages
     let pollResult = await pollAllThreads();
 
-    // If no messages and timeout > 0, set up blocking poll
+    // If no messages and timeout > 0, set up blocking poll with periodic checks
     let timedOut = false;
     if (!pollResult.hasNewMessages && timeoutMs > 0) {
-      // Set up event listeners for all threads
-      const eventNames = threads.map((thread) => `message:${space}:${thread}`);
+      const pollInterval = 100; // Check every 100ms
+      const endTime = Date.now() + timeoutMs;
 
-      // Wait for either a message or timeout
+      // Wait for either a message or timeout with periodic polling
       timedOut = await new Promise<boolean>((resolve) => {
-        let timeoutHandle: NodeJS.Timeout | null = null;
-        let resolved = false;
+        let intervalHandle: NodeJS.Timeout | null = null;
 
         const cleanup = () => {
-          if (timeoutHandle) {
-            clearTimeout(timeoutHandle);
-          }
-          // Remove all event listeners
-          for (const eventName of eventNames) {
-            messageNotifier.removeAllListeners(eventName);
+          if (intervalHandle) {
+            clearInterval(intervalHandle);
           }
         };
 
-        const onMessage = () => {
-          if (!resolved) {
-            resolved = true;
+        const checkForMessages = async () => {
+          // Re-poll to check for new messages
+          const checkResult = await pollAllThreads();
+
+          if (checkResult.hasNewMessages) {
+            // Found new messages! Update pollResult and resolve
+            pollResult = checkResult;
             cleanup();
-            resolve(false); // Not timed out - got a message
+            resolve(false); // Not timed out
+            return;
           }
-        };
 
-        // Set up listeners for all threads
-        for (const eventName of eventNames) {
-          messageNotifier.once(eventName, onMessage);
-        }
-
-        // Set up timeout
-        timeoutHandle = setTimeout(() => {
-          if (!resolved) {
-            resolved = true;
+          // Check if we've exceeded the timeout
+          if (Date.now() >= endTime) {
             cleanup();
             resolve(true); // Timed out
           }
-        }, timeoutMs);
-      });
+        };
 
-      // If we got a message notification, re-poll to get the actual messages
-      if (!timedOut) {
-        pollResult = await pollAllThreads();
-      }
+        // Set up periodic checking
+        intervalHandle = setInterval(checkForMessages, pollInterval);
+
+        // Also set a final timeout as a safety net
+        setTimeout(() => {
+          cleanup();
+          resolve(true); // Timed out
+        }, timeoutMs + 50); // Add small buffer
+      });
     }
 
     // Check for announcement updates

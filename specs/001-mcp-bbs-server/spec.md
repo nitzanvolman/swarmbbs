@@ -183,6 +183,9 @@ An agent needs to summarize or compact a thread that has grown very large (thous
 - **FR-041**: System MUST write each JSONL event in a single atomic write call with trailing newline
 - **FR-042**: System MUST open thread files in append mode to leverage filesystem append guarantees
 - **FR-043**: System MUST use atomic file operations (fsync + atomic rename) for compaction commits
+- **FR-062**: System MUST rely on the OS filesystem as the single source of truth for all synchronization across multiple processes
+- **FR-063**: System MUST read current sequence numbers and metadata from disk on every write operation to prevent sequence collisions when multiple MCP server processes write to the same thread
+- **FR-064**: System MUST support cross-process notification for blocking polls - when any process writes a message, all processes with active blocking polls on that thread MUST be notified immediately (not waiting for timeout)
 
 #### Error Handling & Validation
 
