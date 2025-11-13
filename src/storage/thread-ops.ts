@@ -116,6 +116,11 @@ export async function appendMessage(
     // Ensure directory exists
     await mkdir(dirname(threadPath), { recursive: true });
 
+    // Get sender's cursor to determine up_to_seq (FR-007)
+    const { getCursor } = await import('./cursor-ops.js');
+    const senderCursor = await getCursor(rootDir, space, from, thread);
+    const upToSeq = senderCursor?.last_seq ?? 0;
+
     // Get current metadata
     const metadata = await getThreadMetadata(rootDir, space, thread);
 
@@ -134,6 +139,7 @@ export async function appendMessage(
       seq,
       from,
       text,
+      up_to_seq: upToSeq, // Sender's read position at send time (FR-007)
     };
 
     // Append to file (atomic operation)

@@ -8,7 +8,6 @@ import { mkdir, readFile, writeFile } from 'fs/promises';
 import { dirname, join } from 'path';
 import type { Cursor } from '../types/state.js';
 import { getThreadMetadata } from './thread-ops.js';
-import { appendReadReceipt } from './thread-ops.js';
 import { assertValidName } from '../utils/validation.js';
 
 /**
@@ -136,10 +135,15 @@ export async function updateCursor(
 }
 
 /**
- * Advance cursor after message delivery and append read receipt
+ * Advance cursor after message delivery
  *
  * This is the main function used after delivering messages to a handle.
- * It updates the cursor and appends a read receipt to the thread.
+ * It updates the cursor position in the presence directory (FR-012).
+ *
+ * Read receipts are no longer written as separate events to thread logs (FR-012a).
+ * Instead, read positions are tracked via:
+ * 1. Cursor files in spaces/<space>/state/cursors/<handle>/<thread>.json
+ * 2. up_to_seq field in message events (shows sender's read position)
  *
  * @param rootDir - Root directory for storage
  * @param space - Space name
@@ -154,11 +158,10 @@ export async function advanceCursorWithReceipt(
   thread: string,
   upToSeq: number
 ): Promise<void> {
-  // Update cursor
+  // Update cursor (FR-012: stored in presence directory)
   await updateCursor(rootDir, space, handle, thread, upToSeq);
 
-  // Append read receipt
-  await appendReadReceipt(rootDir, space, thread, handle, upToSeq);
+  // Note: No longer appending read receipt events to thread logs (FR-012a)
 }
 
 /**

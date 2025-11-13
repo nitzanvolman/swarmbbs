@@ -13,10 +13,18 @@ export interface MessageEvent {
   seq: number;       // Monotonically increasing sequence number
   from: string;      // Handle of sender
   text: string;      // Message content (max 8 KiB)
+  up_to_seq: number; // Sender's last_seq for this thread at send time (what they had read)
 }
 
 /**
- * Read Receipt Event - Records that a handle read messages up to a seq
+ * Read Receipt Event - DEPRECATED (FR-012a)
+ *
+ * Read receipts are no longer written to thread logs.
+ * Read positions are tracked via:
+ * 1. Cursor files in spaces/<space>/state/cursors/<handle>/<thread>.json
+ * 2. up_to_seq field in MessageEvents
+ *
+ * This interface is kept for backwards compatibility with existing logs.
  */
 export interface ReadReceiptEvent {
   type: 'read';

@@ -200,29 +200,31 @@ describe('Cursor Logic', () => {
     });
   });
 
-  describe('Advance Cursor with Read Receipt', () => {
-    it('should advance cursor and append read receipt', async () => {
+  describe('Advance Cursor (FR-012: No Read Receipt Events)', () => {
+    it('should advance cursor without appending read receipt event', async () => {
       // Create some messages
       await appendMessage(TEST_DIR, 'space1', 'main', 'agent-b', 'Hello');
       await appendMessage(TEST_DIR, 'space1', 'main', 'agent-b', 'World');
 
-      // Advance cursor with receipt
+      // Advance cursor (FR-012a: no read receipt written to thread log)
       await advanceCursorWithReceipt(TEST_DIR, 'space1', 'agent-a', 'main', 2);
 
-      // Check cursor was updated
+      // Check cursor was updated in presence directory
       const cursor = await getCursor(TEST_DIR, 'space1', 'agent-a', 'main');
       expect(cursor).not.toBeNull();
       expect(cursor!.last_seq).toBe(2);
 
-      // Check read receipt was appended
+      // Check NO read receipt events in thread log (FR-012a)
       const events = await readThreadAll(TEST_DIR, 'space1', 'main');
       const readReceipts = events.filter(isReadReceiptEvent);
-      expect(readReceipts).toHaveLength(1);
-      expect(readReceipts[0].who).toBe('agent-a');
-      expect(readReceipts[0].up_to_seq).toBe(2);
+      expect(readReceipts).toHaveLength(0); // No read receipts in thread logs anymore
+
+      // Verify only message events exist
+      const messages = events.filter(e => e.type === 'msg');
+      expect(messages).toHaveLength(2);
     });
 
-    it('should handle multiple cursor advancements', async () => {
+    it('should handle multiple cursor advancements without creating read receipt events', async () => {
       // Create messages
       for (let i = 1; i <= 10; i++) {
         await appendMessage(TEST_DIR, 'space1', 'main', 'agent-b', `Message ${i}`);
@@ -232,16 +234,18 @@ describe('Cursor Logic', () => {
       await advanceCursorWithReceipt(TEST_DIR, 'space1', 'agent-a', 'main', 5);
       await advanceCursorWithReceipt(TEST_DIR, 'space1', 'agent-a', 'main', 10);
 
-      // Check final cursor position
+      // Check final cursor position in presence directory
       const cursor = await getCursor(TEST_DIR, 'space1', 'agent-a', 'main');
       expect(cursor!.last_seq).toBe(10);
 
-      // Check read receipts
+      // Check NO read receipt events in thread log (FR-012a)
       const events = await readThreadAll(TEST_DIR, 'space1', 'main');
       const readReceipts = events.filter(isReadReceiptEvent);
-      expect(readReceipts).toHaveLength(2);
-      expect(readReceipts[0].up_to_seq).toBe(5);
-      expect(readReceipts[1].up_to_seq).toBe(10);
+      expect(readReceipts).toHaveLength(0); // No read receipts anymore
+
+      // Verify only message events
+      const messages = events.filter(e => e.type === 'msg');
+      expect(messages).toHaveLength(10);
     });
   });
 

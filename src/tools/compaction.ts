@@ -68,6 +68,7 @@ export async function compactCommit(
       ts: string;
       from: string;
       text: string;
+      up_to_seq?: number; // Optional: sender's read position (defaults to 0 if not provided)
     }>;
   }
 ): Promise<{
@@ -92,6 +93,7 @@ export async function compactCommit(
     ts: msg.ts,
     from: msg.from,
     text: msg.text,
+    up_to_seq: msg.up_to_seq ?? 0, // Default to 0 if not provided (historical data)
   }));
 
   const result = await commitCompaction(

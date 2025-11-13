@@ -125,7 +125,7 @@ An agent needs to summarize or compact a thread that has grown very large (thous
 - **FR-004**: System MUST assign monotonically increasing sequence numbers to messages within each thread
 - **FR-005**: System MUST support P2P threads with canonical naming `p2p/<handle-a>__<handle-b>` where handles are lowercased and alphabetically sorted
 - **FR-006**: System MUST store messages in JSONL format (one JSON object per line, UTF-8 encoded, newline terminated)
-- **FR-007**: System MUST persist message events with fields: type, ts (ISO timestamp), seq, from (handle), text
+- **FR-007**: System MUST persist message events with fields: type, ts (ISO timestamp), seq, from (handle), text, up_to_seq (sender's last_seq for this thread at send time)
 - **FR-008**: System MUST sanitize message text to prevent embedded newlines from breaking JSONL format
 
 #### Cursor Management
@@ -133,7 +133,8 @@ An agent needs to summarize or compact a thread that has grown very large (thous
 - **FR-009**: System MUST maintain per-handle cursors for each thread, tracking last_seq and epoch
 - **FR-010**: System MUST only deliver messages with seq greater than the handle's last_seq for that thread
 - **FR-011**: System MUST automatically update cursor after delivering messages to a handle
-- **FR-012**: System MUST append read receipt events to thread after delivering messages, recording who read up to which seq
+- **FR-012**: System MUST persist cursors in the agent's presence directory (spaces/<space>/state/cursors/<handle>/<thread>.json), NOT as events in thread logs
+- **FR-012a**: System MUST NOT write separate "read" receipt events to thread logs (read positions are tracked via cursors in presence directory and up_to_seq in message events)
 - **FR-013**: System MUST clamp cursors to min_available_seq after thread compaction (when epoch changes)
 
 #### Polling & Message Retrieval
@@ -219,9 +220,9 @@ An agent needs to summarize or compact a thread that has grown very large (thous
 
 - **Space**: An isolated namespace for agent coordination, represented as a directory tree containing threads, announcements, and state. Identified by a validated name string.
 
-- **Thread**: An append-only conversation log stored as a JSONL file. Contains events (messages, read receipts, snapshots, system notes). Identified by name within a space. May be a regular named thread or a P2P thread.
+- **Thread**: An append-only conversation log stored as a JSONL file. Contains events (messages, snapshots, system notes). Read positions are tracked separately in cursor files, not as events. Identified by name within a space. May be a regular named thread or a P2P thread.
 
-- **Message Event**: A single message in a thread. Attributes: type ("msg"), timestamp (ISO 8601), sequence number (integer), sender handle (string), text content (string).
+- **Message Event**: A single message in a thread. Attributes: type ("msg"), timestamp (ISO 8601), sequence number (integer), sender handle (string), text content (string), up_to_seq (integer - sender's last_seq for this thread at send time, indicating what they had read).
 
 - **Cursor**: Server-managed read position for a handle in a specific thread. Attributes: last_seq (integer), epoch (integer), updated timestamp. Determines which messages to deliver on next poll.
 
@@ -233,7 +234,7 @@ An agent needs to summarize or compact a thread that has grown very large (thous
 
 - **Announcement**: Space-wide broadcast message. Attributes: version (integer), timestamp (ISO 8601), content_type (text/markdown or text/plain), content (string up to 64 KiB).
 
-- **Read Receipt**: Event recording that a handle read messages up to a certain sequence number. Attributes: type ("read"), timestamp, seq, who (handle), up_to_seq (integer).
+- **Read Receipt**: ~~Deprecated - read positions are now tracked via cursor files in presence directory, not as events in thread logs.~~ Read positions are tracked in two ways: (1) cursor files in spaces/<space>/state/cursors/<handle>/<thread>.json, and (2) up_to_seq field in message events showing what the sender had read when they sent their message.
 
 - **Snapshot Event**: Summary of compacted messages in a thread. Attributes: type ("snapshot"), timestamp, seq, covers (from_seq and to_seq range), summary (string or object), meta (compaction metadata).
 
