@@ -71,26 +71,31 @@ export class E2ETestHarness {
   }
 
   /**
-   * Start all agents concurrently (FR-067)
+   * Start all agents with staggered timing (FR-067)
    */
   async startAgents(): Promise<void> {
-    for (const agent of this.testConfig.agents) {
+    for (let i = 0; i < this.testConfig.agents.length; i++) {
+      const agent = this.testConfig.agents[i];
       const configPath = join(this.testDir, `mcp-config-${agent.handle}.json`);
       const promptPath = join(this.testDir, `prompt-${agent.handle}.txt`);
+      const logPath = join(this.testDir, `${agent.handle}.log`);
 
-      // Create shell script wrapper to run agent
+      // Create shell script wrapper to run agent (non-interactive background process)
       const scriptPath = join(this.testDir, `run-${agent.handle}.sh`);
       const script = `#!/bin/bash
-cd "${this.testDir}"
-cat "${promptPath}" | claude --mcp-config "${configPath}" --permission-mode bypassPermissions 2>&1
+cat "${promptPath}" | claude --mcp-config "${configPath}" --permission-mode bypassPermissions > "${logPath}" 2>&1
 `;
       await writeFile(scriptPath, script, { mode: 0o755 });
 
-      // Spawn shell script
+      // Spawn shell script in background (detached)
       const process = spawn('bash', [scriptPath], {
         cwd: this.testDir,
-        stdio: ['ignore', 'pipe', 'pipe']
+        detached: true,
+        stdio: 'ignore' // Fully detach, output goes to log file
       });
+
+      // Unref so parent test can exit independently
+      process.unref();
 
       const agentProcess: AgentProcess = {
         handle: agent.handle,
@@ -99,18 +104,16 @@ cat "${promptPath}" | claude --mcp-config "${configPath}" --permission-mode bypa
         stderr: []
       };
 
-      // Collect stdout
-      process.stdout?.on('data', (data) => {
-        agentProcess.stdout.push(data.toString());
-      });
-
-      // Collect stderr
-      process.stderr?.on('data', (data) => {
-        agentProcess.stderr.push(data.toString());
-      });
-
       this.agentProcesses.push(agentProcess);
+
+      // Stagger agent starts by 2 seconds to allow earlier agents to post first
+      if (i < this.testConfig.agents.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
     }
+
+    // Give last agent time to start
+    await new Promise(resolve => setTimeout(resolve, 3000));
   }
 
   /**
@@ -140,21 +143,31 @@ cat "${promptPath}" | claude --mcp-config "${configPath}" --permission-mode bypa
    * Stop all agents gracefully (FR-069)
    */
   async stopAgents(): Promise<void> {
+    // Kill detached processes by finding claude processes with our config paths
     for (const agent of this.agentProcesses) {
-      if (!agent.process.killed) {
-        agent.process.kill('SIGTERM');
+      try {
+        const configPath = join(this.testDir, `mcp-config-${agent.handle}.json`);
+
+        // Kill the process group (handles detached processes)
+        if (agent.process.pid) {
+          try {
+            process.kill(-agent.process.pid, 'SIGTERM');
+          } catch {
+            // Process may have already exited
+          }
+        }
+
+        // Also try pkill as backup
+        spawn('pkill', ['-f', `mcp-config-${agent.handle}.json`], {
+          stdio: 'ignore'
+        });
+      } catch {
+        // Ignore errors, process may have already exited
       }
     }
 
-    // Wait for processes to exit
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Force kill if still running
-    for (const agent of this.agentProcesses) {
-      if (!agent.process.killed) {
-        agent.process.kill('SIGKILL');
-      }
-    }
+    // Give processes time to exit
+    await new Promise(resolve => setTimeout(resolve, 2000));
   }
 
   /**

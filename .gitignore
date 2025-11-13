@@ -1,6 +1,7 @@
 # Temp
 tmp/
 temp/
+test-data/
 
 # Node.js
 node_modules/
