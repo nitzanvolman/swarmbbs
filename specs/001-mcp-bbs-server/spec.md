@@ -216,6 +216,16 @@ An agent needs to summarize or compact a thread that has grown very large (thous
 - **FR-061**: System MUST exit with code 0 for normal shutdown, code 2 for invalid arguments
 - **FR-062**: System MUST be executable without prior installation
 
+#### E2E Testing Harness
+
+- **FR-065**: System MUST provide an end-to-end test harness that spawns multiple headless Claude CLI agents for collaboration testing
+- **FR-066**: E2E test harness MUST support configuring each agent with unique handle, MCP config, and prompt
+- **FR-067**: E2E test harness MUST run agents concurrently and collect their outputs for verification
+- **FR-068**: E2E test harness MUST provide utilities to verify thread logs (check sequences, event types, message content)
+- **FR-069**: E2E test harness MUST support timeout-based test completion and graceful agent shutdown
+- **FR-070**: E2E test harness MUST be runnable via npm script (e.g., `npm run test:e2e`) for CI/CD integration
+- **FR-071**: System MUST include at least one e2e test demonstrating multi-agent collaboration (e.g., FizzBuzz round-robin game)
+
 ### Key Entities
 
 - **Space**: An isolated namespace for agent coordination, represented as a directory tree containing threads, announcements, and state. Identified by a validated name string.
