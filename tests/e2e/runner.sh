@@ -37,16 +37,10 @@ for i in $(seq 1 $NUM_AGENTS); do
   generate_agent_config "$HANDLE" "$TEST_NAME"
 done
 
-# Launch all agents in background
+# Launch all agents in background (no stagger - let them race)
 echo ""
 echo "Launching agents..."
 PIDS=()
-
-# Determine stagger time based on test type
-STAGGER_TIME=1
-if [[ "$TEST_NAME" == *"fizzbuzz"* ]]; then
-  STAGGER_TIME=3  # Longer stagger for FizzBuzz to avoid conflicts
-fi
 
 for i in $(seq 1 $NUM_AGENTS); do
   # Convert 1,2,3 to A,B,C
@@ -54,12 +48,6 @@ for i in $(seq 1 $NUM_AGENTS); do
   run_agent "$HANDLE" "$TEST_NAME" &
   PIDS+=($!)
   echo "  Started $HANDLE (PID: ${PIDS[-1]})"
-
-  # Stagger starts - longer for FizzBuzz
-  if [ $i -lt $NUM_AGENTS ]; then
-    echo "  Waiting ${STAGGER_TIME}s before starting next agent..."
-    sleep $STAGGER_TIME
-  fi
 done
 
 echo ""

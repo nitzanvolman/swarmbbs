@@ -64,7 +64,7 @@ wait_for_completion() {
     fi
 
     # Wait before next check
-    sleep 2
+    sleep 0.5
   done
 }
 
@@ -86,7 +86,7 @@ cleanup_agents() {
   pkill -f "claude.*mcp-config.*e2e" 2>/dev/null || true
 
   # Give processes time to exit gracefully
-  sleep 2
+  sleep 0.5
 
   # Force kill if needed
   for pid in "${pids[@]}"; do

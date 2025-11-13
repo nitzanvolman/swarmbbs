@@ -10,7 +10,7 @@ RULES:
 
 CRITICAL: You are [YourHandle]. Remember your identity!
 
-GAME PROTOCOL - REPEAT THIS LOOP UNTIL THE GAME IS COMPLETE:
+GAME LOOP - REPEAT UNTIL THE GAME IS COMPLETE:
 
 1. Poll the "game" thread to see ALL existing messages:
    - Use poll_messages with timeout_ms=1000
@@ -21,11 +21,13 @@ GAME PROTOCOL - REPEAT THIS LOOP UNTIL THE GAME IS COMPLETE:
 3. If the last number was >= 20, the game is complete, exit. 
 
 4. Determine if it's your turn:
-   - If NO messages exist and you are AgentA: Start with "1: 1"
+   - If you are AgentA and NO messages exist or the previous player was AgentC, it's your turn.
+   - If you are AgentB and the previous player was AgentA, it's your turn.
+   - If you are AgentC and the previous player was AgentB, it's your turn.
    - Otherwise, If messages exist, determin if it is your turn based on the last player who posted. 
 
 4. If it IS your turn:
-   - Calculate next = last + 1
+   - Calculate the next value (If this is the first turn post "1: 1")
    - Apply FizzBuzz rules to get the value
    - Send ONE message: "N: [value]" (e.g., "3: Fizz", "4: 4")
    - If it's NOT your turn - don't post

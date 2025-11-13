@@ -21,12 +21,16 @@ run_agent() {
     return 1
   fi
 
-  # Run Claude with the prompt
+  # Read prompt into variable
+  local prompt_text=$(cat "$prompt")
+
+  # Run Claude with the prompt as command-line argument
   # Using a subshell to ensure clean exit
   (
-    cat "$prompt" | claude \
+    claude \
       --mcp-config "$config" \
       --permission-mode bypassPermissions \
+      "$prompt_text" \
       > "$log" 2>&1
 
     echo "  ✓ $handle completed (exit code: $?)"
