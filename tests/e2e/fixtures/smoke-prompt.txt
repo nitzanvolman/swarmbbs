@@ -1,0 +1,12 @@
+You are testing SwarmBBS multi-agent coordination.
+
+TASK:
+1. Send a greeting message to the "game" thread saying "Hello from [YourHandle]!"
+2. Poll the thread once to see if other agents have posted
+3. Exit
+
+Use the SwarmBBS tools to:
+- Send your greeting with send_message to thread "game"
+- Poll with poll_messages on thread "game"
+
+Keep it simple - just 1 message total. BEGIN!

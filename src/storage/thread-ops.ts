@@ -1,0 +1,349 @@
+/**
+ * Thread Operations - Atomic JSONL Append and Thread Management
+ *
+ * Provides atomic message appending and thread metadata tracking
+ */
+
+import { mkdir, appendFile } from 'fs/promises';
+import { dirname, join } from 'path';
+import type { MessageEvent, ReadReceiptEvent, SnapshotEvent, ThreadEvent } from '../types/events.js';
+import type { ThreadMetadata } from '../types/state.js';
+import { globalLockManager, getThreadKey } from '../utils/locking.js';
+import { readTail, readAfterSeq, getCurrentSeq, readAll } from './tail-reader.js';
+import { assertValidName } from '../utils/validation.js';
+
+/**
+ * In-memory thread metadata cache
+ * Key: space/thread
+ */
+const threadMetadataCache = new Map<string, ThreadMetadata>();
+
+/**
+ * Get thread file path
+ * Supports both regular threads and P2P threads (p2p/<handle-a>__<handle-b>)
+ */
+export function getThreadPath(rootDir: string, space: string, thread: string): string {
+  assertValidName(space, 'space');
+
+  // P2P threads have format p2p/<handle-a>__<handle-b>
+  // They are stored in threads/p2p/<handle-a>__<handle-b>.log
+  if (thread.startsWith('p2p/')) {
+    const p2pName = thread.slice(4); // Remove 'p2p/' prefix
+    assertValidName(p2pName, 'P2P thread');
+    return join(rootDir, 'spaces', space, 'threads', 'p2p', `${p2pName}.log`);
+  }
+
+  // Regular threads are stored in threads/<name>.log
+  assertValidName(thread, 'thread');
+  return join(rootDir, 'spaces', space, 'threads', `${thread}.log`);
+}
+
+/**
+ * Get or initialize thread metadata
+ *
+ * IMPORTANT: Always reads current_seq from disk to prevent sequence number
+ * collisions when multiple processes write to the same thread.
+ * EXCEPTION: During compaction, current_seq tracks delta messages in memory
+ * since they're not in the main file yet.
+ */
+export async function getThreadMetadata(
+  rootDir: string,
+  space: string,
+  thread: string
+): Promise<ThreadMetadata> {
+  const key = getThreadKey(space, thread);
+  const threadPath = getThreadPath(rootDir, space, thread);
+
+  // Check cache for compaction state
+  const cached = threadMetadataCache.get(key);
+
+  // During compaction, use cached current_seq (tracks delta file writes)
+  // Otherwise, always read from disk to handle multi-process writes
+  const currentSeq = cached?.compaction_state
+    ? cached.current_seq
+    : await getCurrentSeq(threadPath);
+
+  const metadata: ThreadMetadata = {
+    current_seq: currentSeq,
+    epoch: cached?.epoch ?? 0,
+    min_available_seq: cached?.min_available_seq ?? 0,
+    compaction_state: cached?.compaction_state ?? null,
+  };
+
+  // Update cache with fresh data
+  threadMetadataCache.set(key, metadata);
+  return metadata;
+}
+
+/**
+ * Update thread metadata in cache
+ */
+export function updateThreadMetadata(
+  space: string,
+  thread: string,
+  updates: Partial<ThreadMetadata>
+): void {
+  const key = getThreadKey(space, thread);
+  const current = threadMetadataCache.get(key);
+
+  if (current) {
+    threadMetadataCache.set(key, { ...current, ...updates });
+  }
+}
+
+/**
+ * Append a message event to a thread with atomic locking
+ *
+ * @param rootDir - Root directory for storage
+ * @param space - Space name
+ * @param thread - Thread name
+ * @param from - Handle of sender
+ * @param text - Message text (already sanitized)
+ * @returns The created MessageEvent
+ */
+export async function appendMessage(
+  rootDir: string,
+  space: string,
+  thread: string,
+  from: string,
+  text: string
+): Promise<MessageEvent> {
+  const key = getThreadKey(space, thread);
+
+  return globalLockManager.withLock(key, async () => {
+    const threadPath = getThreadPath(rootDir, space, thread);
+
+    // Ensure directory exists
+    await mkdir(dirname(threadPath), { recursive: true });
+
+    // Get sender's cursor to determine up_to_seq (FR-007)
+    const { getCursor } = await import('./cursor-ops.js');
+    const senderCursor = await getCursor(rootDir, space, from, thread);
+    const upToSeq = senderCursor?.last_seq ?? 0;
+
+    // Get current metadata
+    const metadata = await getThreadMetadata(rootDir, space, thread);
+
+    // Check if compaction is in progress
+    const targetPath = metadata.compaction_state
+      ? metadata.compaction_state.delta_file_path
+      : threadPath;
+
+    // Assign next sequence number
+    const seq = metadata.current_seq + 1;
+    const ts = new Date().toISOString();
+
+    const event: MessageEvent = {
+      type: 'msg',
+      ts,
+      seq,
+      from,
+      text,
+      up_to_seq: upToSeq, // Sender's read position at send time (FR-007)
+    };
+
+    // Append to file (atomic operation)
+    const line = JSON.stringify(event) + '\n';
+    await appendFile(targetPath, line, { encoding: 'utf8', flag: 'a' });
+
+    // Update metadata
+    updateThreadMetadata(space, thread, { current_seq: seq });
+
+    return event;
+  });
+}
+
+/**
+ * Append a read receipt to a thread
+ *
+ * @param rootDir - Root directory for storage
+ * @param space - Space name
+ * @param thread - Thread name
+ * @param who - Handle that read messages
+ * @param upToSeq - Highest message seq read
+ * @returns The created ReadReceiptEvent
+ */
+export async function appendReadReceipt(
+  rootDir: string,
+  space: string,
+  thread: string,
+  who: string,
+  upToSeq: number
+): Promise<ReadReceiptEvent> {
+  const key = getThreadKey(space, thread);
+
+  return globalLockManager.withLock(key, async () => {
+    const threadPath = getThreadPath(rootDir, space, thread);
+
+    // Get current metadata
+    const metadata = await getThreadMetadata(rootDir, space, thread);
+
+    // Check if compaction is in progress
+    const targetPath = metadata.compaction_state
+      ? metadata.compaction_state.delta_file_path
+      : threadPath;
+
+    // Assign next sequence number
+    const seq = metadata.current_seq + 1;
+    const ts = new Date().toISOString();
+
+    const event: ReadReceiptEvent = {
+      type: 'read',
+      ts,
+      seq,
+      who,
+      up_to_seq: upToSeq,
+    };
+
+    // Append to file (atomic operation)
+    const line = JSON.stringify(event) + '\n';
+    await appendFile(targetPath, line, { encoding: 'utf8', flag: 'a' });
+
+    // Update metadata
+    updateThreadMetadata(space, thread, { current_seq: seq });
+
+    return event;
+  });
+}
+
+/**
+ * Append a snapshot event to a thread (used during compaction)
+ *
+ * @param rootDir - Root directory for storage
+ * @param space - Space name
+ * @param thread - Thread name
+ * @param snapshot - Snapshot event to append
+ * @returns The snapshot event with assigned seq
+ */
+export async function appendSnapshot(
+  rootDir: string,
+  space: string,
+  thread: string,
+  snapshot: Omit<SnapshotEvent, 'seq' | 'ts'>
+): Promise<SnapshotEvent> {
+  const key = getThreadKey(space, thread);
+
+  return globalLockManager.withLock(key, async () => {
+    const threadPath = getThreadPath(rootDir, space, thread);
+
+    // Get current metadata
+    const metadata = await getThreadMetadata(rootDir, space, thread);
+
+    // Assign sequence number
+    const seq = metadata.current_seq + 1;
+    const ts = new Date().toISOString();
+
+    const event: SnapshotEvent = {
+      ...snapshot,
+      seq,
+      ts,
+    };
+
+    // Append to file
+    const line = JSON.stringify(event) + '\n';
+    await appendFile(threadPath, line, { encoding: 'utf8', flag: 'a' });
+
+    // Update metadata
+    updateThreadMetadata(space, thread, { current_seq: seq });
+
+    return event;
+  });
+}
+
+/**
+ * Read thread tail (last N events)
+ *
+ * @param rootDir - Root directory for storage
+ * @param space - Space name
+ * @param thread - Thread name
+ * @param maxLines - Maximum number of lines to read
+ * @returns Array of events (oldest first)
+ */
+export async function readThreadTail(
+  rootDir: string,
+  space: string,
+  thread: string,
+  maxLines: number = 100
+): Promise<ThreadEvent[]> {
+  const threadPath = getThreadPath(rootDir, space, thread);
+  return readTail(threadPath, maxLines);
+}
+
+/**
+ * Read messages after a specific sequence number
+ *
+ * @param rootDir - Root directory for storage
+ * @param space - Space name
+ * @param thread - Thread name
+ * @param afterSeq - Only return events with seq > afterSeq
+ * @param maxLines - Maximum number of lines to read
+ * @returns Array of events (oldest first)
+ */
+export async function readThreadAfterSeq(
+  rootDir: string,
+  space: string,
+  thread: string,
+  afterSeq: number,
+  maxLines: number = 1000
+): Promise<ThreadEvent[]> {
+  const threadPath = getThreadPath(rootDir, space, thread);
+  return readAfterSeq(threadPath, afterSeq, maxLines);
+}
+
+/**
+ * Get current sequence number for a thread
+ *
+ * @param rootDir - Root directory for storage
+ * @param space - Space name
+ * @param thread - Thread name
+ * @returns Current max seq, or 0 if thread doesn't exist
+ */
+export async function getThreadCurrentSeq(
+  rootDir: string,
+  space: string,
+  thread: string
+): Promise<number> {
+  const metadata = await getThreadMetadata(rootDir, space, thread);
+  return metadata.current_seq;
+}
+
+/**
+ * Get thread epoch
+ *
+ * @param rootDir - Root directory for storage
+ * @param space - Space name
+ * @param thread - Thread name
+ * @returns Current epoch
+ */
+export async function getThreadEpoch(
+  rootDir: string,
+  space: string,
+  thread: string
+): Promise<number> {
+  const metadata = await getThreadMetadata(rootDir, space, thread);
+  return metadata.epoch;
+}
+
+/**
+ * Read all events from a thread (use with caution on large threads)
+ *
+ * @param rootDir - Root directory for storage
+ * @param space - Space name
+ * @param thread - Thread name
+ * @returns All events in the thread
+ */
+export async function readThreadAll(
+  rootDir: string,
+  space: string,
+  thread: string
+): Promise<ThreadEvent[]> {
+  const threadPath = getThreadPath(rootDir, space, thread);
+  return readAll(threadPath);
+}
+
+/**
+ * Clear thread metadata cache (useful for testing)
+ */
+export function clearThreadMetadataCache(): void {
+  threadMetadataCache.clear();
+}

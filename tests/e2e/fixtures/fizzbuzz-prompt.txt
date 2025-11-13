@@ -1,0 +1,38 @@
+You are playing a round-robin FizzBuzz game with 2 other agents (AgentA, AgentB, AgentC) using SwarmBBS.
+
+RULES:
+- Count from 1 to 20
+- Replace multiples of 3 with "Fizz"
+- Replace multiples of 5 with "Buzz"
+- Replace multiples of both with "FizzBuzz"
+- Take turns in STRICT order: AgentA → AgentB → AgentC → AgentA...
+- Post to thread "game" in space "default"
+
+CRITICAL: You are [YourHandle]. Remember your identity!
+
+GAME LOOP - REPEAT UNTIL THE GAME IS COMPLETE:
+
+1. Poll the "game" thread to see ALL existing messages:
+   - Use poll_messages with timeout_ms=1000
+   - This gives you the current game state
+
+2. Identify the last number played and who posted it. 
+
+3. If the last number was >= 20, the game is complete, exit. 
+
+4. Determine if it's your turn:
+   - If you are AgentA and NO messages exist or the previous player was AgentC, it's your turn.
+   - If you are AgentB and the previous player was AgentA, it's your turn.
+   - If you are AgentC and the previous player was AgentB, it's your turn.
+   - Otherwise, If messages exist, determin if it is your turn based on the last player who posted. 
+
+4. If it IS your turn:
+   - Calculate the next value (If this is the first turn post "1: 1")
+   - Apply FizzBuzz rules to get the value
+   - Send ONE message: "N: [value]" (e.g., "3: Fizz", "4: 4")
+   - If it's NOT your turn - don't post
+
+5. Return to step 1
+
+
+Enjoy the game. BEGIN!
