@@ -14,6 +14,10 @@ wait_for_completion() {
   local min_messages=2
   local min_agents=2
   case "$test_name" in
+    fizzbuzz-parallel)
+      min_messages=999  # Run until timeout (demonstrates parallel coordination over time)
+      min_agents=3      # All 3 agents should participate
+      ;;
     fizzbuzz*)
       min_messages=10  # At least 10 FizzBuzz messages (demonstrates coordination)
       min_agents=3    # All 3 agents should participate

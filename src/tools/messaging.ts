@@ -13,10 +13,12 @@ import {
   getEffectiveCursor,
   advanceCursorWithReceipt,
   resetCursor as resetCursorOp,
+  validateCursorSync,
+  writeCursor,
 } from '../storage/cursor-ops.js';
 import { getAnnouncement, getAnnouncementSeen, markAnnouncementSeen, getWhoIsOnline } from '../storage/state-ops.js';
 import { sanitizeText, validateMessageSize, validateName, getByteLength } from '../utils/validation.js';
-import { badRequest, payloadTooLarge } from '../utils/errors.js';
+import { badRequest, payloadTooLarge, syncConflict } from '../utils/errors.js';
 import { isMessageEvent } from '../types/events.js';
 
 /**
@@ -108,6 +110,22 @@ const sendMessageTool: ToolDefinition = {
         byteLength,
         'Split the message into multiple smaller messages (< 8 KiB each), or summarize the content before sending.'
       );
+    }
+
+    // Validate cursor synchronization before sending (FR-001, FR-002)
+    const syncResult = await validateCursorSync(config.rootDir, space, config.handle, thread);
+
+    if (!syncResult.isSync) {
+      // Agent is out of sync - advance cursor and throw sync error (FR-004, FR-005)
+      const cursorToWrite = {
+        last_seq: syncResult.cursorState!.last_seq,
+        epoch: syncResult.cursorState!.epoch,
+        updated_ts: new Date().toISOString(),
+      };
+      await writeCursor(config.rootDir, space, config.handle, thread, cursorToWrite);
+
+      // Throw sync conflict error with missing messages (FR-003, FR-007, FR-008)
+      throw syncConflict(thread, syncResult.missingMessages || [], syncResult.cursorState!);
     }
 
     // Append message

@@ -51,6 +51,9 @@ EOF
     smoke*)
       prompt_file="tests/e2e/fixtures/smoke-prompt.txt"
       ;;
+    fizzbuzz-parallel)
+      prompt_file="tests/e2e/fixtures/fizzbuzz-parallel-prompt.txt"
+      ;;
     fizzbuzz*)
       prompt_file="tests/e2e/fixtures/fizzbuzz-prompt.txt"
       ;;
