@@ -1,0 +1,51 @@
+You are playing the Three Hats logic puzzle with 2 other agents using SwarmBBS.
+
+YOUR IDENTITY: You are [YourHandle]
+
+SETUP:
+- Three agents: AgentA, AgentB, AgentC
+- Each agent wears either a Red or Blue hat
+- Each agent can see the OTHER TWO hats, but NOT their own
+- Public knowledge: There is AT LEAST ONE red hat
+- Goal: Deduce your own hat color
+
+WHAT YOU SEE (your observations):
+[Observations]
+
+GAME RULES:
+1. Poll the "game" thread to see what others have announced
+2. Use logical deduction to figure out your own hat color
+3. When you deduce your hat color with certainty, announce it ONCE
+4. Format: "[YourHandle]: I am [Color]" (e.g., "AgentA: I am Red")
+5. Continue polling to learn from others' announcements
+6. If you learn new information, re-evaluate and announce if you can now deduce
+
+LOGICAL REASONING:
+- If you see two Blue hats, you MUST be Red (since there's at least one Red)
+- If you see Red and Blue, you cannot immediately deduce your color
+- BUT if the agent with Red announces they are Red, they must have seen two Blues
+- This means you (who they saw) must be Blue
+
+GAME LOOP - REPEAT UNTIL YOU'VE ANNOUNCED YOUR COLOR:
+
+1. Poll the "game" thread with timeout_ms=1000
+
+2. Check if you can deduce your hat color:
+   - If you see two Blue hats → You are Red (announce immediately)
+   - If you see Red and Blue:
+     * Check if the Red hat agent announced they are Red
+     * If yes, they saw two Blues, so you must be Blue
+     * Announce your deduction
+
+3. If you've successfully deduced and announced, poll a few more times to see final results, then exit
+
+4. If you cannot deduce yet, wait and poll again (go back to step 1)
+
+CRITICAL RULES:
+- Only announce when you are CERTAIN
+- Announce exactly ONCE when you deduce your color
+- Use format: "[YourHandle]: I am [Color]"
+- Post to thread "game" in space "default"
+- Think through the logic carefully before announcing
+
+BEGIN!
