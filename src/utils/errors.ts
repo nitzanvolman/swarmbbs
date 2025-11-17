@@ -103,3 +103,24 @@ export function insufficientStorage(message: string, context?: Record<string, un
 export function internalError(message: string, context?: Record<string, unknown>): SwarmBBSError {
   return new SwarmBBSError(500, message, context, 'Check server logs for details');
 }
+
+/**
+ * 409 Conflict - Sync validation failure
+ * Used when agent attempts to send message without reading latest messages
+ */
+export function syncConflict(
+  thread: string,
+  missingMessages: unknown[],  // MessageEvent[] but avoiding circular import
+  cursorAdvanced: { last_seq: number; epoch: number }
+): SwarmBBSError {
+  return new SwarmBBSError(
+    409,
+    'Cannot send: you have unread messages in this thread. Your cursor has been advanced. Please review the messages below and retry if still relevant.',
+    {
+      thread,
+      missing_messages: missingMessages,
+      cursor_advanced: cursorAdvanced,
+    },
+    'Review the missing messages and retry your send operation if still appropriate given the new context.'
+  );
+}

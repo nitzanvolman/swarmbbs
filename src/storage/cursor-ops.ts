@@ -239,3 +239,78 @@ export async function resetCursor(
 
   return cursor;
 }
+
+/**
+ * Validate cursor synchronization before send operation
+ *
+ * Checks if agent's cursor is up-to-date with thread state.
+ * If out of sync, retrieves missing messages and prepares error response.
+ *
+ * Used by sendMessage and sendP2P tools to prevent agents from
+ * sending messages without full conversation context (FR-001, FR-002).
+ *
+ * @param rootDir - Root directory for storage
+ * @param space - Space name
+ * @param handle - Handle identifier attempting to send
+ * @param thread - Thread name
+ * @param maxMessages - Maximum missing messages to retrieve (default 1000)
+ * @returns SyncValidationResult with sync status and missing messages if any
+ */
+export async function validateCursorSync(
+  rootDir: string,
+  space: string,
+  handle: string,
+  thread: string,
+  maxMessages: number = 1000
+): Promise<import('../types/state.js').SyncValidationResult> {
+  // Get agent's current cursor
+  const cursor = await getCursor(rootDir, space, handle, thread);
+
+  // Get thread metadata to check current state
+  const threadMetadata = await getThreadMetadata(rootDir, space, thread);
+
+  // If no cursor exists, agent is sending first message to this thread - always in sync
+  if (!cursor) {
+    return { isSync: true };
+  }
+
+  // Handle epoch mismatch (thread was compacted since cursor was last updated)
+  let effectiveLastSeq = cursor.last_seq;
+  if (cursor.epoch < threadMetadata.epoch) {
+    // Cursor is stale due to compaction, clamp to min_available_seq
+    effectiveLastSeq = Math.max(cursor.last_seq, threadMetadata.min_available_seq);
+  }
+
+  // Check if cursor matches current thread state
+  if (effectiveLastSeq === threadMetadata.current_seq) {
+    // Agent is fully caught up - send can proceed
+    return { isSync: true };
+  }
+
+  // Agent is behind - need to retrieve missing messages
+  const { readThreadAfterSeq } = await import('./thread-ops.js');
+  const allEvents = await readThreadAfterSeq(
+    rootDir,
+    space,
+    thread,
+    effectiveLastSeq,
+    maxMessages
+  );
+
+  // Filter to only message events (exclude read receipts)
+  const missingMessages = allEvents.filter(
+    (event): event is import('../types/events.js').MessageEvent => event.type === 'msg'
+  );
+
+  // Prepare cursor state for error response
+  const cursorState = {
+    last_seq: threadMetadata.current_seq,
+    epoch: threadMetadata.epoch,
+  };
+
+  return {
+    isSync: false,
+    missingMessages,
+    cursorState,
+  };
+}

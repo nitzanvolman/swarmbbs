@@ -6,8 +6,9 @@
 
 import type { ToolDefinition, ServerConfig } from '../server/mcp-server.js';
 import { canonicalP2PName, sanitizeText, validateMessageSize, getByteLength } from '../utils/validation.js';
-import { badRequest, payloadTooLarge } from '../utils/errors.js';
+import { badRequest, payloadTooLarge, syncConflict } from '../utils/errors.js';
 import { appendMessage, getThreadPath } from '../storage/thread-ops.js';
+import { validateCursorSync, writeCursor } from '../storage/cursor-ops.js';
 import { existsSync } from 'fs';
 
 /**
@@ -136,6 +137,22 @@ export async function sendP2P(
 
   // Generate canonical thread name
   const threadName = canonicalP2PName(myHandle, peerHandle);
+
+  // Validate cursor synchronization before sending (FR-001, FR-002, FR-006)
+  const syncResult = await validateCursorSync(rootDir, space, myHandle, threadName);
+
+  if (!syncResult.isSync) {
+    // Agent is out of sync - advance cursor and throw sync error (FR-004, FR-005)
+    const cursorToWrite = {
+      last_seq: syncResult.cursorState!.last_seq,
+      epoch: syncResult.cursorState!.epoch,
+      updated_ts: new Date().toISOString(),
+    };
+    await writeCursor(rootDir, space, myHandle, threadName, cursorToWrite);
+
+    // Throw sync conflict error with missing messages (FR-003, FR-007, FR-008)
+    throw syncConflict(threadName, syncResult.missingMessages || [], syncResult.cursorState!);
+  }
 
   // Append message to P2P thread
   const event = await appendMessage(rootDir, space, threadName, myHandle, text);

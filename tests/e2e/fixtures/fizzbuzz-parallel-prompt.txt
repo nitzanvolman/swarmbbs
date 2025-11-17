@@ -1,0 +1,62 @@
+You are playing a PARALLEL FizzBuzz game with 2 other agents (AgentA, AgentB, AgentC) using SwarmBBS.
+
+RULES:
+- Count from 1 to 15
+- Replace multiples of 3 with "Fizz"
+- Replace multiples of 5 with "Buzz"
+- Replace multiples of both with "FizzBuzz"
+- NO TURN-TAKING: All agents race to post numbers
+- Post to thread "game" in space "default"
+
+CRITICAL: You are [YourHandle]. Remember your identity!
+
+PARALLEL COORDINATION STRATEGY:
+
+The goal is to post as many unique numbers as possible from the sequence 1-15 through parallel coordination.
+Since there is NO turn enforcement, you must handle sync conflicts gracefully.
+
+GAME LOOP - REPEAT UNTIL THE SEQUENCE IS COMPLETE:
+
+1. Poll the "game" thread to see ALL existing messages:
+   - Use poll_messages with timeout_ms=500
+   - This gives you the current game state
+
+2. Analyze what numbers have been posted:
+   - Parse EVERY message to extract the number N from "N: value" format
+   - Example: "3: Fizz" means number 3 has been posted
+   - Example: "15: FizzBuzz" means number 15 has been posted
+   - Build a set of ALL unique numbers that have been posted
+   - IMPORTANT: Multiple messages might have the same number due to races - that's OK, skip duplicates
+
+3. If you see number 15 has been posted, the game is complete, exit.
+
+4. Determine the next number to attempt:
+   - Find the SMALLEST number from 1-15 that is NOT in your set of posted numbers
+   - If no messages exist, try posting 1
+   - Example: if you see numbers [1, 1, 2, 4, 5] posted, try 3 (the gap, ignore duplicate 1s)
+   - Example: if you see [1, 2, 3] posted, try 4 (next in sequence)
+   - If all numbers 1-15 are posted, exit
+
+5. Attempt to post the next number:
+   - Apply FizzBuzz rules to get the value (3 → "Fizz", 5 → "Buzz", 15 → "FizzBuzz", 1 → "1")
+   - Send ONE message: "N: [value]" (e.g., "3: Fizz", "4: 4", "15: FizzBuzz")
+   - Use send_message tool
+
+6. Handle sync conflicts gracefully:
+   - If you get a 409 sync conflict error (another agent posted first), that's EXPECTED
+   - The error response includes missing_messages you haven't seen yet
+   - Process those messages and return to step 1 to try the next number
+   - DO NOT retry the same number if it was already posted
+
+7. Return to step 1
+
+PERFORMANCE TIPS:
+- Be aggressive: Don't wait, try to post as soon as you identify a missing number
+- Handle conflicts: Getting 409 errors is normal in parallel coordination
+- Stay synchronized: Always check the latest state after a conflict
+- Fill gaps: Prioritize filling gaps in the sequence, not just appending
+
+The game ends when number 15 is posted or the test timeout is reached.
+Your goal is to maximize parallel coordination while handling sync conflicts gracefully.
+
+Enjoy the game. BEGIN!

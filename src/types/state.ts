@@ -69,3 +69,32 @@ export interface ThreadMetadata {
   min_available_seq: number;
   compaction_state: CompactionSession | null;
 }
+
+/**
+ * Cursor State - Inline cursor position snapshot
+ * Used in sync validation and error responses
+ */
+export interface CursorState {
+  last_seq: number;  // Sequence number of last message seen
+  epoch: number;     // Thread epoch number
+}
+
+/**
+ * Sync Validation Result - Outcome of cursor synchronization check
+ * Returned by validateCursorSync before send operations
+ */
+export interface SyncValidationResult {
+  isSync: boolean;                      // True if cursor matches thread state
+  missingMessages?: import('./events.js').MessageEvent[];  // Messages agent hasn't seen (when isSync=false)
+  cursorState?: CursorState;            // Current cursor after validation (when isSync=false)
+}
+
+/**
+ * Sync Error Context - Structured context in sync conflict errors
+ * Included in 409 error responses when send fails due to out-of-sync cursor
+ */
+export interface SyncErrorContext {
+  thread: string;                       // Thread name where conflict occurred
+  missing_messages: import('./events.js').MessageEvent[];  // Unread messages
+  cursor_advanced: CursorState;         // New cursor position after advancement
+}
